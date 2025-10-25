@@ -12,11 +12,6 @@ export default function MapContainer() {
   const { viewport, setViewport } = useStore();
   const { resolvedTheme } = useTheme();
   const [mapStyle, setMapStyle] = useState('mapbox://styles/mapbox/dark-v11');
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   useEffect(() => {
     if (resolvedTheme) {
@@ -31,10 +26,6 @@ export default function MapContainer() {
   const handleViewportChange = (viewState: ViewState) => {
     setViewport(viewState);
   };
-  
-  if (!isClient) {
-    return null; // Or a loading spinner
-  }
 
   if (!MAPBOX_TOKEN) {
     return (

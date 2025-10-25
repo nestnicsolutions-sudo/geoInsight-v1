@@ -1,6 +1,15 @@
+"use client";
+
 import Header from '@/components/layout/header';
 import ControlPanel from '@/components/control-panel';
-import MapContainer from '@/components/map-container';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const MapContainer = dynamic(() => import('@/components/map-container'), {
+  ssr: false,
+  loading: () => <Skeleton className="h-full w-full" />,
+});
+
 
 export default function Home() {
   return (
