@@ -8,7 +8,7 @@ export default function ColumnMappingPanel() {
     const hasData = data.length > 0;
 
     const handleSelectChange = (field: 'latitude' | 'longitude' | 'value' | 'category') => (value: string) => {
-        setMappedColumns({ [field]: value === "" ? null : value });
+        setMappedColumns({ [field]: value === "none" ? null : value });
     };
 
     return (
@@ -45,12 +45,12 @@ export default function ColumnMappingPanel() {
 
                 <div className="space-y-2">
                     <Label>Value / Metric (Optional)</Label>
-                    <Select onValueChange={handleSelectChange('value')} value={mappedColumns.value || ''} disabled={!hasData}>
+                    <Select onValueChange={handleSelectChange('value')} value={mappedColumns.value || 'none'} disabled={!hasData}>
                         <SelectTrigger>
                             <SelectValue placeholder="Select value column" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="none">None</SelectItem>
                            {columns.map(col => <SelectItem key={col} value={col}>{col}</SelectItem>)}
                         </SelectContent>
                     </Select>
@@ -58,12 +58,12 @@ export default function ColumnMappingPanel() {
 
                 <div className="space-y-2">
                     <Label>Category (Optional)</Label>
-                    <Select onValueChange={handleSelectChange('category')} value={mappedColumns.category || ''} disabled={!hasData}>
+                    <Select onValueChange={handleSelectChange('category')} value={mappedColumns.category || 'none'} disabled={!hasData}>
                         <SelectTrigger>
                             <SelectValue placeholder="Select category column" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="none">None</SelectItem>
                             {columns.map(col => <SelectItem key={col} value={col}>{col}</SelectItem>)}
                         </SelectContent>
                     </Select>
