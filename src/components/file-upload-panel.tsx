@@ -6,12 +6,14 @@ import { useToast } from "@/hooks/use-toast";
 import { UploadCloud, File, Loader2 } from "lucide-react";
 import { useState, useCallback, ChangeEvent, DragEvent } from "react";
 import { useStore } from "@/lib/store";
+import Papa from "papaparse";
+import * as XLSX from "xlsx";
 
 export default function FileUploadPanel() {
     const [dragging, setDragging] = useState(false);
     const [loadingSample, setLoadingSample] = useState(false);
     const { toast } = useToast();
-    const { rawData, setRawData } = useStore();
+    const { rawData, setRawData, setData, setColumns } = useStore();
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -48,13 +50,67 @@ export default function FileUploadPanel() {
     };
 
     const processFile = (file: File) => {
-        // Placeholder for file processing logic
-        console.log("Processing file:", file.name);
-        setRawData({ name: file.name, content: "dummy content" });
-        toast({
-            title: "File Uploaded",
-            description: `${file.name} is ready for column mapping.`,
-        });
+        const reader = new FileReader();
+        
+        reader.onload = (e) => {
+            try {
+                const content = e.target?.result;
+                if (!content) throw new Error("File content is empty.");
+
+                let parsedData: any[] = [];
+                let fileContentStr = "";
+
+                if (file.name.endsWith('.csv')) {
+                    fileContentStr = content as string;
+                    const result = Papa.parse(fileContentStr, { header: true, skipEmptyLines: true });
+                    parsedData = result.data;
+                } else if (file.name.endsWith('.xlsx')) {
+                    const workbook = XLSX.read(content, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    parsedData = XLSX.utils.sheet_to_json(worksheet);
+                    fileContentStr = JSON.stringify(parsedData, null, 2);
+                } else if (file.name.endsWith('.json')) {
+                    fileContentStr = content as string;
+                    parsedData = JSON.parse(fileContentStr);
+                } else {
+                    throw new Error("Unsupported file type. Please use CSV, XLSX, or JSON.");
+                }
+
+                if (parsedData.length > 0) {
+                    setData(parsedData);
+                    setColumns(Object.keys(parsedData[0]));
+                    setRawData({ name: file.name, content: fileContentStr });
+                    toast({
+                        title: "File Processed Successfully",
+                        description: `${file.name} is ready for column mapping.`,
+                    });
+                } else {
+                    throw new Error("No data found in the file.");
+                }
+
+            } catch (error: any) {
+                toast({
+                    variant: 'destructive',
+                    title: "Failed to process file",
+                    description: error.message || "An unknown error occurred.",
+                });
+            }
+        };
+
+        reader.onerror = () => {
+             toast({
+                variant: 'destructive',
+                title: "Failed to read file",
+                description: "Could not read the selected file.",
+            });
+        }
+        
+        if (file.name.endsWith('.xlsx')) {
+            reader.readAsArrayBuffer(file);
+        } else {
+            reader.readAsText(file);
+        }
     };
     
     const loadSampleData = async () => {
@@ -62,12 +118,7 @@ export default function FileUploadPanel() {
         try {
             const response = await fetch('/sample-data.csv');
             const text = await response.text();
-            // In a real app, you would parse this text
-            setRawData({ name: 'sample-data.csv', content: text });
-            toast({
-                title: "Sample Data Loaded",
-                description: "The sample dataset is ready for column mapping.",
-            });
+            processFile(new File([text], 'sample-data.csv', { type: 'text/csv' }));
         } catch (error) {
             toast({
                 variant: 'destructive',

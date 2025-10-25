@@ -6,12 +6,17 @@ import { useStore } from '@/lib/store';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+const MAPBOX_TOKEN = "pk.eyJ1IjoiZ2FidWJha2FyIiwiYSI6ImNtZmszc3k3OTE4Y3Mya29saWhyeDFqYm8ifQ.YoJGe63qRUXBmoAnQq2Sxw";
 
 export default function MapContainer() {
-  const { viewport, setViewport } = useStore();
+  const { viewport, setViewport, layers } = useStore();
   const { resolvedTheme } = useTheme();
   const [mapStyle, setMapStyle] = useState('mapbox://styles/mapbox/dark-v11');
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     if (resolvedTheme) {
@@ -26,6 +31,10 @@ export default function MapContainer() {
   const handleViewportChange = (viewState: ViewState) => {
     setViewport(viewState);
   };
+  
+  if (!isClient) {
+    return null;
+  }
 
   if (!MAPBOX_TOKEN) {
     return (
@@ -45,11 +54,11 @@ export default function MapContainer() {
         <DeckGL
             initialViewState={viewport}
             controller={true}
-            layers={[]} 
+            layers={layers} 
             onViewStateChange={e => handleViewportChange(e.viewState)}
             getTooltip={({object}) => object && `
-              <div class="bg-card text-card-foreground p-2 rounded-md shadow-lg">
-                <strong>Value:</strong> ${object.value}
+              <div class="bg-card text-card-foreground p-2 rounded-md shadow-lg max-w-xs break-words">
+                ${Object.entries(object).map(([key, value]) => `<div><strong>${key}:</strong> ${value}</div>`).join('')}
               </div>
             `}
         >

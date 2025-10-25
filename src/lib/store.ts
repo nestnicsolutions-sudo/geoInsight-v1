@@ -1,12 +1,23 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import type { ViewState } from 'react-map-gl';
+import { ScatterplotLayer } from '@deck.gl/layers';
+import type { Layer } from '@deck.gl/core';
 
 // Define the structure for raw data
 interface RawData {
     name: string;
-    content: string; // Could be CSV string, JSON string etc.
+    content: string; 
 }
+
+export interface MappedColumns {
+    latitude: string | null;
+    longitude: string | null;
+    value: string | null;
+    category: string | null;
+}
+
+export type DataRecord = Record<string, any>;
 
 interface AppState {
     projectName: string;
@@ -14,6 +25,18 @@ interface AppState {
 
     rawData: RawData | null;
     setRawData: (data: RawData | null) => void;
+
+    data: DataRecord[];
+    setData: (data: DataRecord[]) => void;
+    
+    columns: string[];
+    setColumns: (columns: string[]) => void;
+
+    mappedColumns: MappedColumns;
+    setMappedColumns: (mappedColumns: MappedColumns) => void;
+
+    layers: Layer[];
+    addLayer: (layer: Layer) => void;
     
     // map state
     viewport: ViewState;
@@ -28,6 +51,23 @@ export const useStore = create<AppState>()(
 
       rawData: null,
       setRawData: (data) => set({ rawData: data }),
+
+      data: [],
+      setData: (data) => set({ data }),
+
+      columns: [],
+      setColumns: (columns) => set({ columns }),
+      
+      mappedColumns: {
+        latitude: null,
+        longitude: null,
+        value: null,
+        category: null,
+      },
+      setMappedColumns: (mappedColumns) => set(state => ({ mappedColumns: { ...state.mappedColumns, ...mappedColumns }})),
+
+      layers: [],
+      addLayer: (layer) => set(state => ({ layers: [...state.layers, layer] })),
 
       viewport: {
         longitude: 103.8198,
