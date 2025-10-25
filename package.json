@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@deck.gl/aggregation-layers": "^9.0.21",
     "@deck.gl/layers": "^9.0.21",
     "@deck.gl/mapbox": "^9.0.21",
     "@deck.gl/react": "^9.0.21",
