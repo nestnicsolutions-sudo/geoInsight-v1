@@ -8,17 +8,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown, Plus } from "lucide-react";
-import { useStore, DataRecord } from "@/lib/store";
+import { useStore, DataRecord, LayerProps } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
-import {
-  ScatterplotLayer,
-  ColumnLayer,
-} from "@deck.gl/layers";
-import {
-  HeatmapLayer,
-  HexagonLayer,
-  ScreenGridLayer,
-} from "@deck.gl/aggregation-layers";
 import type { Layer } from "@deck.gl/core";
 
 type LayerType =
@@ -42,25 +33,12 @@ export default function LayerListPanel() {
       return;
     }
 
-    let newLayer: Layer;
-
-    const baseProps = {
-      id: `${layerType.toLowerCase()}-${Date.now()}`,
-      data,
-      pickable: true,
-      getPosition: (d: DataRecord) => [
-        Number(d[mappedColumns.longitude!]),
-        Number(d[mappedColumns.latitude!]),
-      ],
-    };
-    
-    const getValue = (d: DataRecord) => mappedColumns.value ? Number(d[mappedColumns.value]) : 1;
-
+    let newLayerConfig: any;
+    const id = `${layerType.toLowerCase()}-${Date.now()}`;
 
     switch (layerType) {
       case "ScatterplotLayer":
-        newLayer = new ScatterplotLayer({
-          ...baseProps,
+        newLayerConfig = {
           opacity: 0.8,
           stroked: true,
           filled: true,
@@ -70,30 +48,24 @@ export default function LayerListPanel() {
           lineWidthMinPixels: 1,
           getFillColor: [255, 140, 0, 180],
           getLineColor: [0, 0, 0],
-          getRadius: getValue
-        });
+        };
         break;
       case "HeatmapLayer":
-        newLayer = new HeatmapLayer({
-          ...baseProps,
+        newLayerConfig = {
           intensity: 1,
           threshold: 0.03,
           radiusPixels: 30,
-          getWeight: getValue
-        });
+        };
         break;
       case "HexagonLayer":
-        newLayer = new HexagonLayer({
-          ...baseProps,
+        newLayerConfig = {
           extruded: true,
           radius: 2000,
           elevationScale: 4,
-          getElevationValue: (points: any[]) => points.reduce((sum, point) => sum + (mappedColumns.value ? Number(point.source[mappedColumns.value]) : 1), 0),
-        });
+        };
         break;
       case "ScreenGridLayer":
-        newLayer = new ScreenGridLayer({
-          ...baseProps,
+        newLayerConfig = {
           cellSizePixels: 40,
           colorRange: [
             [0, 25, 0, 25],
@@ -103,18 +75,15 @@ export default function LayerListPanel() {
             [0, 190, 0, 190],
             [0, 255, 0, 255],
           ],
-          getWeight: getValue
-        });
+        };
         break;
-       case "ColumnLayer":
-        newLayer = new ColumnLayer({
-            ...baseProps,
-            diskResolution: 12,
-            radius: 2500,
-            extruded: true,
-            getElevation: getValue,
-            getFillColor: [255, 140, 0, 180],
-        });
+      case "ColumnLayer":
+        newLayerConfig = {
+          diskResolution: 12,
+          radius: 2500,
+          extruded: true,
+          getFillColor: [255, 140, 0, 180],
+        };
         break;
       default:
         toast({
@@ -123,6 +92,12 @@ export default function LayerListPanel() {
           description: "The selected layer type is not supported.",
         });
         return;
+    }
+    
+    const newLayer: LayerProps = {
+        id,
+        type: layerType,
+        config: newLayerConfig
     }
 
     addLayer(newLayer);

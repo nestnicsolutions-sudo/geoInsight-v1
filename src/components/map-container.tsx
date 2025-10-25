@@ -2,21 +2,26 @@
 import 'mapbox-gl/dist/mapbox-gl.css';
 import Map, { ViewState } from 'react-map-gl';
 import DeckGL from '@deck.gl/react';
-import { useStore } from '@/lib/store';
+import { useStore, DataRecord } from '@/lib/store';
 import { useTheme } from 'next-themes';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+import { ScatterplotLayer, ColumnLayer } from '@deck.gl/layers';
+import { HeatmapLayer, HexagonLayer, ScreenGridLayer } from '@deck.gl/aggregation-layers';
 
-const MAPBOX_TOKEN = "pk.eyJ1IjoiZ2FidWJha2FyIiwiYSI6ImNtZmszc3k3OTE4Y3Mya29saWhyeDFqYm8ifQ.YoJGe63qRUXBmoAnQq2Sxw";
+const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+
+const layerMap: any = {
+  ScatterplotLayer,
+  HeatmapLayer,
+  HexagonLayer,
+  ScreenGridLayer,
+  ColumnLayer,
+};
 
 export default function MapContainer() {
-  const { viewport, setViewport, layers } = useStore();
+  const { viewport, setViewport, layers: layerProps, data, mappedColumns } = useStore();
   const { resolvedTheme } = useTheme();
   const [mapStyle, setMapStyle] = useState('mapbox://styles/mapbox/dark-v11');
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   useEffect(() => {
     if (resolvedTheme) {
@@ -32,9 +37,48 @@ export default function MapContainer() {
     setViewport(viewState);
   };
   
-  if (!isClient) {
-    return null;
-  }
+  const layers = useMemo(() => {
+    if (!mappedColumns.latitude || !mappedColumns.longitude) return [];
+
+    return layerProps.map(props => {
+      const LayerComponent = layerMap[props.type];
+      if (!LayerComponent) return null;
+
+      const baseProps = {
+        ...props.config,
+        id: props.id,
+        data,
+        pickable: true,
+        getPosition: (d: DataRecord) => [
+          Number(d[mappedColumns.longitude!]),
+          Number(d[mappedColumns.latitude!]),
+        ],
+      };
+
+      const getValue = (d: DataRecord) => mappedColumns.value ? Number(d[mappedColumns.value]) : 1;
+
+      let valueProps = {};
+      switch (props.type) {
+        case "ScatterplotLayer":
+          valueProps = { getRadius: getValue };
+          break;
+        case "HeatmapLayer":
+          valueProps = { getWeight: getValue };
+          break;
+        case "HexagonLayer":
+          valueProps = { getElevationValue: (points: any[]) => points.reduce((sum, point) => sum + (mappedColumns.value ? Number(point.source[mappedColumns.value]) : 1), 0) };
+          break;
+        case "ScreenGridLayer":
+           valueProps = { getWeight: getValue };
+          break;
+        case "ColumnLayer":
+          valueProps = { getElevation: getValue };
+          break;
+      }
+      
+      return new LayerComponent({ ...baseProps, ...valueProps });
+    }).filter(Boolean);
+  }, [layerProps, data, mappedColumns]);
 
   if (!MAPBOX_TOKEN) {
     return (

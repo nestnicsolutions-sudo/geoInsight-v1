@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import type { ViewState } from 'react-map-gl';
-import { ScatterplotLayer } from '@deck.gl/layers';
 import type { Layer } from '@deck.gl/core';
 
 // Define the structure for raw data
@@ -19,6 +18,12 @@ export interface MappedColumns {
 
 export type DataRecord = Record<string, any>;
 
+export type LayerProps = {
+    id: string;
+    type: string;
+    config: any;
+};
+
 interface AppState {
     projectName: string;
     setProjectName: (name: string) => void;
@@ -35,8 +40,8 @@ interface AppState {
     mappedColumns: MappedColumns;
     setMappedColumns: (mappedColumns: Partial<MappedColumns>) => void;
 
-    layers: Layer[];
-    addLayer: (layer: Layer) => void;
+    layers: LayerProps[];
+    addLayer: (layer: LayerProps) => void;
     
     // map state
     viewport: ViewState;
