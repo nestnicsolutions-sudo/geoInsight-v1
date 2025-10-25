@@ -10,7 +10,7 @@ const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
 export default function MapContainer() {
   const { viewport, setViewport } = useStore();
-  const { theme } = useTheme();
+  const { resolvedTheme } = useTheme();
   const [mapStyle, setMapStyle] = useState('mapbox://styles/mapbox/dark-v11');
   const [isClient, setIsClient] = useState(false);
 
@@ -19,19 +19,23 @@ export default function MapContainer() {
   }, []);
 
   useEffect(() => {
-    if (isClient) {
+    if (resolvedTheme) {
       setMapStyle(
-        theme === 'dark'
+        resolvedTheme === 'dark'
           ? 'mapbox://styles/mapbox/dark-v11'
-          : 'mapbox://styles/mapbox/dark-v11'
+          : 'mapbox://styles/mapbox/light-v11'
       );
     }
-  }, [theme, isClient]);
+  }, [resolvedTheme]);
 
   const handleViewportChange = (viewState: ViewState) => {
     setViewport(viewState);
   };
   
+  if (!isClient) {
+    return null; // Or a loading spinner
+  }
+
   if (!MAPBOX_TOKEN) {
     return (
         <div className="flex h-full w-full items-center justify-center bg-muted">
@@ -43,10 +47,6 @@ export default function MapContainer() {
             </div>
         </div>
     )
-  }
-
-  if (!isClient) {
-    return null; // Or a loading spinner
   }
 
   return (
