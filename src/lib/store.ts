@@ -33,7 +33,7 @@ interface AppState {
     setColumns: (columns: string[]) => void;
 
     mappedColumns: MappedColumns;
-    setMappedColumns: (mappedColumns: MappedColumns) => void;
+    setMappedColumns: (mappedColumns: Partial<MappedColumns>) => void;
 
     layers: Layer[];
     addLayer: (layer: Layer) => void;

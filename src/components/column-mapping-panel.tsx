@@ -8,7 +8,7 @@ export default function ColumnMappingPanel() {
     const hasData = data.length > 0;
 
     const handleSelectChange = (field: 'latitude' | 'longitude' | 'value' | 'category') => (value: string) => {
-        setMappedColumns({ [field]: value });
+        setMappedColumns({ [field]: value === "" ? null : value });
     };
 
     return (
@@ -50,6 +50,7 @@ export default function ColumnMappingPanel() {
                             <SelectValue placeholder="Select value column" />
                         </SelectTrigger>
                         <SelectContent>
+                            <SelectItem value="">None</SelectItem>
                            {columns.map(col => <SelectItem key={col} value={col}>{col}</SelectItem>)}
                         </SelectContent>
                     </Select>
@@ -62,6 +63,7 @@ export default function ColumnMappingPanel() {
                             <SelectValue placeholder="Select category column" />
                         </SelectTrigger>
                         <SelectContent>
+                            <SelectItem value="">None</SelectItem>
                             {columns.map(col => <SelectItem key={col} value={col}>{col}</SelectItem>)}
                         </SelectContent>
                     </Select>
