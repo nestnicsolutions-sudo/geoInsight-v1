@@ -30,8 +30,8 @@ export const useStore = create<AppState>()(
       setRawData: (data) => set({ rawData: data }),
 
       viewport: {
-        longitude: -98.5795,
-        latitude: 39.8283,
+        longitude: 103.8198,
+        latitude: 1.3521,
         zoom: 4,
         pitch: 0,
         bearing: 0,

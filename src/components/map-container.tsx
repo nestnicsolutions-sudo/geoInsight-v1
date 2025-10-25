@@ -11,7 +11,7 @@ const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 export default function MapContainer() {
   const { viewport, setViewport } = useStore();
   const { theme } = useTheme();
-  const [mapStyle, setMapStyle] = useState('mapbox://styles/mapbox/streets-v11');
+  const [mapStyle, setMapStyle] = useState('mapbox://styles/mapbox/dark-v11');
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -23,7 +23,7 @@ export default function MapContainer() {
       setMapStyle(
         theme === 'dark'
           ? 'mapbox://styles/mapbox/dark-v11'
-          : 'mapbox://styles/mapbox/streets-v11'
+          : 'mapbox://styles/mapbox/dark-v11'
       );
     }
   }, [theme, isClient]);
