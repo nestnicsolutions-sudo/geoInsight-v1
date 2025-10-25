@@ -53,6 +53,9 @@ export default function LayerListPanel() {
         Number(d[mappedColumns.latitude!]),
       ],
     };
+    
+    const getValue = (d: DataRecord) => mappedColumns.value ? Number(d[mappedColumns.value]) : 1;
+
 
     switch (layerType) {
       case "ScatterplotLayer":
@@ -67,6 +70,7 @@ export default function LayerListPanel() {
           lineWidthMinPixels: 1,
           getFillColor: [255, 140, 0, 180],
           getLineColor: [0, 0, 0],
+          getRadius: getValue
         });
         break;
       case "HeatmapLayer":
@@ -75,6 +79,7 @@ export default function LayerListPanel() {
           intensity: 1,
           threshold: 0.03,
           radiusPixels: 30,
+          getWeight: getValue
         });
         break;
       case "HexagonLayer":
@@ -83,7 +88,7 @@ export default function LayerListPanel() {
           extruded: true,
           radius: 2000,
           elevationScale: 4,
-          getElevationValue: (points: any[]) => points.length,
+          getElevationValue: (points: any[]) => points.reduce((sum, point) => sum + (mappedColumns.value ? Number(point.source[mappedColumns.value]) : 1), 0),
         });
         break;
       case "ScreenGridLayer":
@@ -98,6 +103,7 @@ export default function LayerListPanel() {
             [0, 190, 0, 190],
             [0, 255, 0, 255],
           ],
+          getWeight: getValue
         });
         break;
        case "ColumnLayer":
@@ -106,7 +112,7 @@ export default function LayerListPanel() {
             diskResolution: 12,
             radius: 2500,
             extruded: true,
-            getElevation: 500,
+            getElevation: getValue,
             getFillColor: [255, 140, 0, 180],
         });
         break;
