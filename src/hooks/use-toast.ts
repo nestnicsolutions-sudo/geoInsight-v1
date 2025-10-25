@@ -2,13 +2,14 @@
 
 // Inspired by react-hot-toast library
 import * as React from "react"
+import { useTheme } from "next-themes"
 
 import type {
   ToastActionElement,
   ToastProps,
 } from "@/components/ui/toast"
 
-const TOAST_LIMIT = 1
+const TOAST_LIMIT = 3
 const TOAST_REMOVE_DELAY = 1000000
 
 type ToasterToast = ToastProps & {
@@ -173,6 +174,7 @@ function toast({ ...props }: Toast) {
 
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState)
+  const { theme } = useTheme()
 
   React.useEffect(() => {
     listeners.push(setState)
@@ -188,6 +190,7 @@ function useToast() {
     ...state,
     toast,
     dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
+    theme,
   }
 }
 

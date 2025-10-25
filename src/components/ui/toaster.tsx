@@ -9,15 +9,17 @@ import {
   ToastTitle,
   ToastViewport,
 } from "@/components/ui/toast"
+import { useTheme } from "next-themes"
 
 export function Toaster() {
   const { toasts } = useToast()
+  const { theme } = useTheme()
 
   return (
     <ToastProvider>
       {toasts.map(function ({ id, title, description, action, ...props }) {
         return (
-          <Toast key={id} {...props}>
+          <Toast key={id} {...props} className={theme}>
             <div className="grid gap-1">
               {title && <ToastTitle>{title}</ToastTitle>}
               {description && (
