@@ -7,10 +7,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, Plus } from "lucide-react";
-import { useStore, DataRecord, LayerProps } from "@/lib/store";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { ChevronDown, Plus, Trash2 } from "lucide-react";
+import { useStore, LayerProps } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
-import type { Layer } from "@deck.gl/core";
+import { Slider } from "@/components/ui/slider";
+import { Label } from "@/components/ui/label";
 
 type LayerType =
   | "ScatterplotLayer"
@@ -20,7 +26,7 @@ type LayerType =
   | "ColumnLayer";
 
 export default function LayerListPanel() {
-  const { addLayer, layers, data, mappedColumns } = useStore();
+  const { addLayer, layers, data, mappedColumns, removeLayer, updateLayerConfig } = useStore();
   const { toast } = useToast();
 
   const handleAddLayer = (layerType: LayerType) => {
@@ -52,6 +58,7 @@ export default function LayerListPanel() {
         break;
       case "HeatmapLayer":
         newLayerConfig = {
+          opacity: 0.8,
           intensity: 1,
           threshold: 0.03,
           radiusPixels: 30,
@@ -59,6 +66,7 @@ export default function LayerListPanel() {
         break;
       case "HexagonLayer":
         newLayerConfig = {
+          opacity: 0.8,
           extruded: true,
           radius: 2000,
           elevationScale: 4,
@@ -66,6 +74,7 @@ export default function LayerListPanel() {
         break;
       case "ScreenGridLayer":
         newLayerConfig = {
+          opacity: 0.8,
           cellSizePixels: 40,
           colorRange: [
             [0, 25, 0, 25],
@@ -79,6 +88,7 @@ export default function LayerListPanel() {
         break;
       case "ColumnLayer":
         newLayerConfig = {
+          opacity: 0.8,
           diskResolution: 12,
           radius: 2500,
           extruded: true,
@@ -109,6 +119,18 @@ export default function LayerListPanel() {
   
     const capitalizeFirstLetter = (string: string) => {
         return string.charAt(0).toUpperCase() + string.slice(1);
+    }
+
+    const handleDeleteLayer = (layerId: string) => {
+      removeLayer(layerId);
+      toast({
+        title: "Layer Removed",
+        description: "The layer has been removed from the map."
+      })
+    }
+    
+    const handleOpacityChange = (layerId: string, value: number[]) => {
+      updateLayerConfig(layerId, { opacity: value[0] });
     }
 
   return (
@@ -154,14 +176,31 @@ export default function LayerListPanel() {
           </div>
         ) : (
           layers.map((layer, index) => (
-            <div
-              key={layer.id}
-              className="p-3 text-sm border rounded-lg bg-secondary/50"
-            >
-              <div className="font-medium">
-                Layer {index + 1}: {capitalizeFirstLetter(layer.id.split('-')[0])}
+            <Collapsible key={layer.id} className="p-3 text-sm border rounded-lg bg-secondary/50">
+              <div className="flex items-center justify-between">
+                <CollapsibleTrigger className="flex items-center w-full text-left">
+                  <span className="font-medium">
+                    Layer {index + 1}: {capitalizeFirstLetter(layer.id.split('-')[0])}
+                  </span>
+                  <ChevronDown className="h-4 w-4 ml-auto transition-transform [&[data-state=open]]:rotate-180" />
+                </CollapsibleTrigger>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteLayer(layer.id)}>
+                    <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
-            </div>
+
+              <CollapsibleContent className="pt-4 space-y-4">
+                  <div className="space-y-2">
+                      <Label>Opacity</Label>
+                      <Slider
+                          value={[layer.config.opacity]}
+                          onValueChange={(value) => handleOpacityChange(layer.id, value)}
+                          max={1}
+                          step={0.01}
+                      />
+                  </div>
+              </CollapsibleContent>
+            </Collapsible>
           ))
         )}
       </div>

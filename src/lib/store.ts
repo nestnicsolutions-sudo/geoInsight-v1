@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import type { ViewState } from 'react-map-gl';
-import type { Layer } from '@deck.gl/core';
 
 // Define the structure for raw data
 interface RawData {
@@ -42,6 +41,8 @@ interface AppState {
 
     layers: LayerProps[];
     addLayer: (layer: LayerProps) => void;
+    removeLayer: (layerId: string) => void;
+    updateLayerConfig: (layerId: string, newConfig: Partial<any>) => void;
     
     // map state
     viewport: ViewState;
@@ -73,6 +74,12 @@ export const useStore = create<AppState>()(
 
       layers: [],
       addLayer: (layer) => set(state => ({ layers: [...state.layers, layer] })),
+      removeLayer: (layerId) => set(state => ({ layers: state.layers.filter(l => l.id !== layerId) })),
+      updateLayerConfig: (layerId, newConfig) => set(state => ({
+        layers: state.layers.map(l => 
+          l.id === layerId ? { ...l, config: { ...l.config, ...newConfig } } : l
+        )
+      })),
 
       viewport: {
         longitude: 103.8198,
