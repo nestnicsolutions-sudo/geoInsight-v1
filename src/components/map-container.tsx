@@ -32,11 +32,6 @@ export default function MapContainer() {
   const { resolvedTheme } = useTheme();
   const [mapStyle, setMapStyle] = useState('mapbox://styles/mapbox/dark-v11');
   const [selectedObject, setSelectedObject] = useState<DataRecord | null>(null);
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   useEffect(() => {
     if (resolvedTheme) {
@@ -102,10 +97,6 @@ export default function MapContainer() {
       return new LayerComponent({ ...baseProps, ...valueProps });
     }).filter(Boolean);
   }, [layerProps, data, mappedColumns]);
-
-  if (!isClient) {
-    return null;
-  }
   
   if (!MAPBOX_TOKEN) {
     return (
@@ -150,7 +141,7 @@ export default function MapContainer() {
                         }
                         return `
                           <div style="font-weight: 600; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; opacity: 0.7;">${key}</div>
-                          <div style="white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${displayValue}</div>
+                          <div style="white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${String(displayValue)}</div>
                         `;
                       }).join('')}
                     </div>

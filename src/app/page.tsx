@@ -2,13 +2,7 @@
 
 import Header from '@/components/layout/header';
 import ControlPanel from '@/components/control-panel';
-import dynamic from 'next/dynamic';
-import { Skeleton } from '@/components/ui/skeleton';
-
-const MapContainer = dynamic(() => import('@/components/map-container'), {
-  ssr: false,
-  loading: () => <Skeleton className="h-full w-full" />,
-});
+import ClientOnlyMap from '@/components/client-only-map';
 
 
 export default function Home() {
@@ -20,7 +14,7 @@ export default function Home() {
            <ControlPanel />
         </aside>
         <main className="flex-1 relative">
-           <MapContainer />
+           <ClientOnlyMap />
         </main>
       </div>
     </div>
