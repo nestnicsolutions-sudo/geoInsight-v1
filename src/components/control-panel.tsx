@@ -7,6 +7,7 @@ import {
 import FileUploadPanel from "./file-upload-panel"
 import ColumnMappingPanel from "./column-mapping-panel"
 import LayerListPanel from "./layer-list-panel"
+import ChartPanel from "./charts/chart-panel"
 
 export default function ControlPanel() {
     return (
@@ -28,6 +29,12 @@ export default function ControlPanel() {
                     <AccordionTrigger className="text-base font-medium">3. Add Layers</AccordionTrigger>
                     <AccordionContent>
                         <LayerListPanel />
+                    </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="item-4">
+                    <AccordionTrigger className="text-base font-medium">4. Visualize Charts</AccordionTrigger>
+                    <AccordionContent>
+                        <ChartPanel />
                     </AccordionContent>
                 </AccordionItem>
             </Accordion>

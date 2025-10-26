@@ -3,9 +3,13 @@
 import Header from '@/components/layout/header';
 import ControlPanel from '@/components/control-panel';
 import ClientOnlyMap from '@/components/client-only-map';
+import { useStore } from '@/lib/store';
+import ChartContainer from '@/components/charts/chart-container';
 
 
 export default function Home() {
+  const { activeView } = useStore();
+
   return (
     <div className="flex h-screen flex-col bg-background font-body text-foreground">
       <Header />
@@ -14,7 +18,7 @@ export default function Home() {
            <ControlPanel />
         </aside>
         <main className="flex-1 relative">
-           <ClientOnlyMap />
+          {activeView === 'map' ? <ClientOnlyMap /> : <ChartContainer />}
         </main>
       </div>
     </div>

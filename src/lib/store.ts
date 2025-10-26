@@ -29,6 +29,15 @@ export interface AiError {
     sourceFile: string;
 }
 
+export type ChartType = 'bar' | 'line' | 'pie' | null;
+
+export interface ChartConfig {
+    type: ChartType;
+    xAxis: string | null;
+    yAxis: string | null;
+}
+
+
 interface AppState {
     projectName: string;
     setProjectName: (name: string) => void;
@@ -62,6 +71,12 @@ interface AppState {
     setAiError: (error: AiError | null) => void;
     layerSuggestions: SmartLayerSuggestionsOutput;
     setLayerSuggestions: (suggestions: SmartLayerSuggestionsOutput) => void;
+
+    // Chart state
+    activeView: 'map' | 'chart';
+    setActiveView: (view: 'map' | 'chart') => void;
+    chartConfig: ChartConfig;
+    setChartConfig: (config: Partial<ChartConfig>) => void;
 
 }
 
@@ -114,6 +129,15 @@ export const useStore = create<AppState>()(
       setAiError: (error) => set({ aiError: error }),
       layerSuggestions: [],
       setLayerSuggestions: (suggestions) => set({ layerSuggestions: suggestions }),
+
+      activeView: 'map',
+      setActiveView: (view) => set({ activeView: view }),
+      chartConfig: {
+          type: null,
+          xAxis: null,
+          yAxis: null,
+      },
+      setChartConfig: (config) => set(state => ({ chartConfig: { ...state.chartConfig, ...config }})),
     }),
     { name: 'GeoInsightStore' }
   )
