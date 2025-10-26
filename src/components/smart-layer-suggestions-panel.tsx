@@ -131,8 +131,8 @@ export default function SmartLayerSuggestionsPanel() {
             )}
             
             {!loading && layerSuggestions.length === 0 && hasLatLng && (
-                <div className="flex flex-col items-center justify-center h-24 text-sm border border-dashed rounded-lg bg-muted/20 text-muted-foreground">
-                    <span>No suggestions available.</span>
+                <div className="flex flex-col items-center justify-center h-24 p-4 text-sm text-center border border-dashed rounded-lg bg-muted/20 text-muted-foreground">
+                    <span>The AI couldn't find any specific layer suggestions for this data.</span>
                      <Button variant="link" size="sm" onClick={fetchSuggestions}>Try regenerating</Button>
                 </div>
             )}
