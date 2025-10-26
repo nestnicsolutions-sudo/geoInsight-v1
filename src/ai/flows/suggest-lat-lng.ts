@@ -29,7 +29,7 @@ const suggestLatLngFlow = ai.defineFlow(
   },
   async (input) => {
     const { output } = await ai.generate({
-      model: 'googleai/gemini-1.5-flash-preview',
+      model: 'googleai/gemini-pro',
       prompt: `
         You are an expert data analyst specializing in geospatial data.
         Your task is to identify the latitude and longitude columns from a given list of column names.
