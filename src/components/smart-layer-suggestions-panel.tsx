@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { suggestLayers, SmartLayerSuggestionsOutput } from "@/ai/flows/smart-layer-suggestions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Wand2, Lightbulb, Plus } from "lucide-react";
+import { Loader2, Lightbulb, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "./ui/separator";
 
@@ -29,7 +29,7 @@ export default function SmartLayerSuggestionsPanel() {
         if (!hasLatLng) return;
 
         setLoading(true);
-        setLayerSuggestions([]);
+        setLayerSuggestions([]); // Clear previous suggestions
         try {
             const suggestions = await suggestLayers({
                 columnTypes,
@@ -46,20 +46,22 @@ export default function SmartLayerSuggestionsPanel() {
                 title: "AI Suggestion Failed",
                 description: error.message || "Could not generate layer suggestions.",
             });
+            // Ensure suggestions are cleared on failure
+            setLayerSuggestions([]);
         } finally {
             setLoading(false);
         }
     };
 
+    // Effect to automatically fetch suggestions when mappings change
     useEffect(() => {
-        // Automatically fetch suggestions when mappings change, but only if lat/lng are set
         if (hasLatLng) {
             fetchSuggestions();
         } else {
-            // Clear suggestions if mappings become invalid
+            // Clear suggestions if lat/lng are unmapped
             setLayerSuggestions([]);
         }
-    }, [mappedColumns.latitude, mappedColumns.longitude, mappedColumns.value, mappedColumns.category]);
+    }, [hasLatLng, mappedColumns.value, mappedColumns.category]);
 
 
     const handleAddLayer = (suggestion: SmartLayerSuggestionsOutput[0]) => {
@@ -77,7 +79,7 @@ export default function SmartLayerSuggestionsPanel() {
     
     if (!hasLatLng) {
         return (
-             <div className="text-sm text-center text-muted-foreground py-4">
+             <div className="py-4 text-sm text-center text-muted-foreground">
                 Map your latitude and longitude columns to get AI-powered layer suggestions.
             </div>
         );
@@ -87,7 +89,7 @@ export default function SmartLayerSuggestionsPanel() {
         <div className="space-y-4 mb-4">
              <div className="flex items-center">
                 <Separator className="flex-1" />
-                <p className="px-2 text-xs text-muted-foreground">AI SUGGESTIONS</p>
+                <p className="px-2 text-xs uppercase text-muted-foreground">AI Suggestions</p>
                 <Separator className="flex-1" />
             </div>
 

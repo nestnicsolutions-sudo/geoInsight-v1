@@ -79,12 +79,12 @@ const prompt = ai.definePrompt({
 
   Guidelines:
   - If latitude and longitude are present, ScatterplotLayer is almost always a good primary choice.
-  - If a 'value' column is mapped, consider layers that use it for aggregation or magnitude, like HeatmapLayer, HexagonLayer, or ColumnLayer.
+  - If a 'value' column is mapped, consider layers that use it for aggregation or magnitude, like HeatmapLayer or HexagonLayer.
   - HexagonLayer is good for showing density of points in an area.
   - HeatmapLayer shows intensity or density as a smooth color gradient.
-  - ColumnLayer is great for showing magnitude (like population or price) at specific lat/lon points in 3D.
+  - If a 'value' is present and represents magnitude at a point (not for aggregation), ColumnLayer is great for showing this in 3D.
   - ScatterplotLayer can use the 'value' for radius and the 'category' for color.
-  - Only suggest layers that are appropriate for the provided mappings. For example, do not suggest ColumnLayer if there is no 'value' column.
+  - Only suggest layers that are appropriate for the provided mappings. For example, do not suggest ColumnLayer or HeatmapLayer if there is no mapped 'value' column.
   
   Available Layer Types:
   - ScatterplotLayer
@@ -94,10 +94,10 @@ const prompt = ai.definePrompt({
 
   Return an array of layer suggestions. Each suggestion must include:
   1.  'layerType': A valid Deck.GL layer name from the available list.
-  2.  'initialConfiguration': A JSON object with sensible default settings. This MUST include 'opacity' and a color configuration (like 'getFillColor' or 'colorRange'). For ScatterplotLayer, include radius settings. For HexagonLayer, include 'radius' and 'elevationScale'.
+  2.  'initialConfiguration': A JSON object with sensible default settings. This MUST include 'opacity' (set to 0.8) and a color configuration. For ScatterplotLayer, include radius settings. For HexagonLayer, include 'radius' and 'elevationScale'. For HeatmapLayer, include 'radiusPixels' and 'intensity'. For ColumnLayer, include 'radius' and a 'getFillColor'.
   3.  'rationale': A short, concise explanation for why the layer is a good fit.
 
-  The output must be a valid JSON array.
+  The output must be a valid JSON array. If no suggestions can be made, return an empty array.
   `,
 });
 
