@@ -8,12 +8,14 @@ import { useState, useCallback, ChangeEvent, DragEvent } from "react";
 import { useStore } from "@/lib/store";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
+import { suggestColumnMapping } from "@/ai/flows/suggest-column-mapping";
 
 export default function FileUploadPanel() {
     const [dragging, setDragging] = useState(false);
     const [loadingSample, setLoadingSample] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
     const { toast } = useToast();
-    const { rawData, setRawData, setData, setColumns } = useStore();
+    const { rawData, setRawData, setData, setColumns, setMappedColumns } = useStore();
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -49,10 +51,11 @@ export default function FileUploadPanel() {
         setDragging(false);
     };
 
-    const processFile = (file: File) => {
+    const processFile = async (file: File) => {
+        setIsProcessing(true);
         const reader = new FileReader();
         
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
             try {
                 const content = e.target?.result;
                 if (!content) throw new Error("File content is empty.");
@@ -70,21 +73,47 @@ export default function FileUploadPanel() {
                     const worksheet = workbook.Sheets[sheetName];
                     parsedData = XLSX.utils.sheet_to_json(worksheet);
                     fileContentStr = JSON.stringify(parsedData, null, 2);
-                } else if (file.name.endsWith('.json')) {
+                } else if (file.name.endsWith('.json') || file.name.endsWith('.geojson')) {
                     fileContentStr = content as string;
-                    parsedData = JSON.parse(fileContentStr);
+                    const jsonData = JSON.parse(fileContentStr);
+                    if (jsonData.type === 'FeatureCollection') {
+                        parsedData = jsonData.features.map((feature: any) => ({
+                            ...feature.properties,
+                            geometry: feature.geometry
+                        }));
+                    } else {
+                        parsedData = Array.isArray(jsonData) ? jsonData : [jsonData];
+                    }
                 } else {
-                    throw new Error("Unsupported file type. Please use CSV, XLSX, or JSON.");
+                    throw new Error("Unsupported file type. Please use CSV, XLSX, or GeoJSON.");
                 }
 
                 if (parsedData.length > 0) {
+                    const columns = Object.keys(parsedData[0]);
                     setData(parsedData);
-                    setColumns(Object.keys(parsedData[0]));
+                    setColumns(columns);
                     setRawData({ name: file.name, content: fileContentStr });
                     toast({
                         title: "File Processed Successfully",
-                        description: `${file.name} is ready for column mapping.`,
+                        description: `Now analyzing columns for smart mapping...`,
                     });
+
+                    // AI-powered column mapping
+                    try {
+                        const suggestions = await suggestColumnMapping({ columnNames: columns });
+                        setMappedColumns(suggestions);
+                        toast({
+                            title: "AI Mapping Complete",
+                            description: "Columns have been automatically mapped. Please review.",
+                        });
+                    } catch (aiError: any) {
+                         toast({
+                            variant: 'destructive',
+                            title: "AI Mapping Failed",
+                            description: aiError.message || "Could not suggest column mappings.",
+                        });
+                    }
+
                 } else {
                     throw new Error("No data found in the file.");
                 }
@@ -95,6 +124,8 @@ export default function FileUploadPanel() {
                     title: "Failed to process file",
                     description: error.message || "An unknown error occurred.",
                 });
+            } finally {
+                setIsProcessing(false);
             }
         };
 
@@ -104,6 +135,7 @@ export default function FileUploadPanel() {
                 title: "Failed to read file",
                 description: "Could not read the selected file.",
             });
+             setIsProcessing(false);
         }
         
         if (file.name.endsWith('.xlsx')) {
@@ -118,7 +150,7 @@ export default function FileUploadPanel() {
         try {
             const response = await fetch('/sample-data.csv');
             const text = await response.text();
-            processFile(new File([text], 'sample-data.csv', { type: 'text/csv' }));
+            await processFile(new File([text], 'sample-data.csv', { type: 'text/csv' }));
         } catch (error) {
             toast({
                 variant: 'destructive',
@@ -130,6 +162,8 @@ export default function FileUploadPanel() {
         }
     }
 
+    const isBusy = isProcessing || loadingSample;
+
     return (
         <div className="space-y-4">
             <div
@@ -137,21 +171,30 @@ export default function FileUploadPanel() {
                 onDragOver={handleDragOver}
                 onDragEnter={handleDragEnter}
                 onDragLeave={handleDragLeave}
-                className={`relative flex flex-col items-center justify-center w-full p-8 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors ${dragging ? 'border-primary bg-muted/50' : 'border-border'}`}
+                className={`relative flex flex-col items-center justify-center w-full p-8 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors ${dragging ? 'border-primary bg-muted/50' : 'border-border'} ${isBusy ? 'pointer-events-none opacity-50' : ''}`}
             >
-                <UploadCloud className="w-10 h-10 text-muted-foreground" />
-                <p className="mt-2 text-sm text-center text-muted-foreground">
-                    <span className="font-semibold text-primary">Click to upload</span> or drag and drop
-                </p>
-                <p className="text-xs text-muted-foreground">CSV, XLSX, or JSON (max 10MB)</p>
-                <Input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} accept=".csv,.xlsx,.json" />
+                {isProcessing ? (
+                    <>
+                        <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                        <p className="mt-2 text-sm text-center text-muted-foreground">Processing...</p>
+                    </>
+                ) : (
+                    <>
+                        <UploadCloud className="w-10 h-10 text-muted-foreground" />
+                        <p className="mt-2 text-sm text-center text-muted-foreground">
+                            <span className="font-semibold text-primary">Click to upload</span> or drag and drop
+                        </p>
+                        <p className="text-xs text-muted-foreground">CSV, XLSX, or GeoJSON</p>
+                        <Input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} accept=".csv,.xlsx,.json,.geojson" disabled={isBusy} />
+                    </>
+                )}
             </div>
             <div className="relative flex items-center">
                 <div className="flex-grow border-t border-muted-foreground/20"></div>
                 <span className="flex-shrink mx-4 text-xs text-muted-foreground">OR</span>
                 <div className="flex-grow border-t border-muted-foreground/20"></div>
             </div>
-            <Button variant="outline" className="w-full" onClick={loadSampleData} disabled={loadingSample}>
+            <Button variant="outline" className="w-full" onClick={loadSampleData} disabled={isBusy}>
                 {loadingSample ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
