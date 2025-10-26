@@ -14,7 +14,10 @@ import {z} from 'genkit';
 const SuggestColumnMappingInputSchema = z.object({
   columnNames: z
     .array(z.string())
-    .describe('A list of column names from the user\'s uploaded dataset.'),
+    .describe("A list of column names from the user's uploaded dataset."),
+  dataPreview: z
+    .string()
+    .describe('A JSON string representing the first 50 rows of the dataset.'),
 });
 export type SuggestColumnMappingInput = z.infer<
   typeof SuggestColumnMappingInputSchema
@@ -60,14 +63,15 @@ const prompt = ai.definePrompt({
   name: 'suggestColumnMappingPrompt',
   input: {schema: SuggestColumnMappingInputSchema},
   output: {schema: SuggestColumnMappingOutputSchema},
-  prompt: `You are an expert data analyst specializing in geographic data. Your task is to automatically identify the most likely columns for latitude, longitude, a numerical value (metric), and a category from a given list of column names.
+  prompt: `You are an expert data analyst specializing in geographic data. Your task is to automatically identify the most likely columns for latitude, longitude, a numerical value (metric), and a category from a given list of column names and a data preview.
 
-  Analyze the following column names:
-  {{{JSON.stringify(columnNames)}}}
+  Analyze the following column names and data preview:
+  Column Names: {{{JSON.stringify(columnNames)}}}
+  Data Preview (first 50 rows): {{{dataPreview}}}
 
   Guidelines for mapping:
-  - Latitude: Look for names like 'latitude', 'lat', 'y', 'y_coord', 'latitude_deg'.
-  - Longitude: Look for names like 'longitude', 'lon', 'long', 'x', 'x_coord', 'longitude_deg'.
+  - Latitude: Look for names like 'latitude', 'lat', 'y', 'y_coord', 'latitude_deg'. The values should be numbers, typically between -90 and 90.
+  - Longitude: Look for names like 'longitude', 'lon', 'long', 'x', 'x_coord', 'longitude_deg'. The values should be numbers, typically between -180 and 180.
   - Value/Metric: Prefer numerical columns that are not latitude or longitude. Look for names like 'value', 'metric', 'population', 'magnitude', 'size', 'count', 'amount', 'price'.
   - Category: Prefer columns with string/text data that could be used for grouping. Look for names like 'category', 'type', 'group', 'class', 'name', 'label', 'id'.
 

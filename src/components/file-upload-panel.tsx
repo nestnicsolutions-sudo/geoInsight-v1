@@ -95,20 +95,23 @@ export default function FileUploadPanel() {
                     setRawData({ name: file.name, content: fileContentStr });
                     toast({
                         title: "File Processed Successfully",
-                        description: `Now analyzing columns for smart mapping...`,
+                        description: `Now analyzing data for smart mapping...`,
                     });
 
                     // AI-powered column mapping
                     try {
-                        const suggestions = await suggestColumnMapping({ columnNames: columns });
+                        const dataPreview = JSON.stringify(parsedData.slice(0, 50));
+                        const suggestions = await suggestColumnMapping({ columnNames: columns, dataPreview });
+                        
                         const validSuggestions = Object.entries(suggestions).reduce((acc, [key, value]) => {
-                            if (value) {
+                            if (value && columns.includes(value)) {
                                 acc[key as keyof typeof suggestions] = value;
                             }
                             return acc;
                         }, {} as Partial<typeof suggestions>);
 
                         setMappedColumns(validSuggestions);
+
                         toast({
                             title: "AI Mapping Complete",
                             description: "Columns have been automatically mapped. Please review.",
