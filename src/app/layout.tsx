@@ -2,7 +2,6 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from '@/components/theme-provider';
-import AiErrorOverlay from '@/components/ai-error-overlay';
 
 export const metadata: Metadata = {
   title: 'GeoInsight',
@@ -32,7 +31,6 @@ export default function RootLayout({
         >
           {children}
           <Toaster />
-          <AiErrorOverlay />
         </ThemeProvider>
       </body>
     </html>

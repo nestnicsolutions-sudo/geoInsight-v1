@@ -8,7 +8,6 @@ import { useState, useCallback, ChangeEvent, DragEvent } from "react";
 import { useStore } from "@/lib/store";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
-import { suggestLatLng } from "@/ai/flows/suggest-lat-lng";
 
 export default function FileUploadPanel() {
     const [dragging, setDragging] = useState(false);
@@ -77,41 +76,49 @@ export default function FileUploadPanel() {
         return types;
     }
 
-    const runAiMapping = async (columns: string[]) => {
-        try {
-            setAiError(null);
-            toast({
-                title: "AI Mapping",
-                description: "Analyzing columns to find latitude and longitude...",
-            });
-            const suggestions = await suggestLatLng({ columnNames: columns });
-            if (suggestions.latitude && suggestions.longitude) {
-                setMappedColumns({
-                    latitude: suggestions.latitude,
-                    longitude: suggestions.longitude,
-                });
-                toast({
-                    title: "AI Mapping Successful",
-                    description: `Latitude and Longitude columns have been automatically mapped.`,
-                });
-            } else {
-                 toast({
-                    variant: 'default',
-                    title: "AI Mapping",
-                    description: "Could not automatically determine latitude and longitude columns.",
-                });
+    const suggestColumns = (columns: string[]) => {
+        toast({
+            title: "Column Analysis",
+            description: "Analyzing columns to find latitude and longitude...",
+        });
+
+        const latKeywords = ['lat', 'latitude', 'y', 'lat_num', 'latitude_decimal'];
+        const lonKeywords = ['lon', 'lng', 'long', 'longitude', 'x', 'long_num', 'longitude_decimal'];
+
+        let latitude: string | null = null;
+        let longitude: string | null = null;
+
+        for (const col of columns) {
+            const lowerCol = col.toLowerCase();
+            if (!latitude && latKeywords.some(keyword => lowerCol.includes(keyword))) {
+                latitude = col;
             }
-        } catch (error: any) {
-            setAiError({
-                message: error.message || "Could not run AI column mapping.",
-                sourceFile: "src/ai/flows/suggest-lat-lng.ts"
+            if (!longitude && lonKeywords.some(keyword => lowerCol.includes(keyword))) {
+                longitude = col;
+            }
+            if (latitude && longitude) break;
+        }
+
+        if (latitude && longitude) {
+            setMappedColumns({ latitude, longitude });
+            toast({
+                title: "Automatic Mapping Successful",
+                description: `Latitude and Longitude columns have been automatically mapped.`,
+            });
+        } else {
+             toast({
+                variant: 'default',
+                title: "Automatic Mapping",
+                description: "Could not automatically determine latitude and longitude columns. Please map them manually.",
             });
         }
     }
 
+
     const processFile = async (file: File) => {
         setIsProcessing(true);
         setMappedColumns({ latitude: null, longitude: null, value: null, category: null }); // Reset mapping
+        setAiError(null);
         
         const reader = new FileReader();
         
@@ -160,8 +167,8 @@ export default function FileUploadPanel() {
                         description: `Found ${parsedData.length} rows and ${columns.length} columns.`,
                     });
                     
-                    // Run AI mapping
-                    await runAiMapping(columns);
+                    // Run local column suggestion
+                    suggestColumns(columns);
 
                 } else {
                     throw new Error("No data found in the file.");
