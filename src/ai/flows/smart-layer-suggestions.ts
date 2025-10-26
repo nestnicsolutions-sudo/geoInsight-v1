@@ -10,6 +10,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { googleAI } from '@genkit-ai/google-genai';
 
 const SmartLayerSuggestionsInputSchema = z.object({
   dataSample: z.string().describe("A stringified sample of the first few rows of the user's data (e.g., CSV or JSON format)."),
@@ -37,6 +38,7 @@ export type SmartLayerSuggestionsOutput = z.infer<typeof SmartLayerSuggestionsOu
 
 const smartLayersPrompt = ai.definePrompt({
     name: 'smartLayersPrompt',
+    model: googleAI.model('gemini-pro'),
     input: { schema: SmartLayerSuggestionsInputSchema },
     output: { schema: SmartLayerSuggestionsOutputSchema },
     prompt: `You are a GIS (Geographic Information System) expert specializing in data visualization with deck.gl. Your task is to suggest the best deck.gl layers for a given dataset.
