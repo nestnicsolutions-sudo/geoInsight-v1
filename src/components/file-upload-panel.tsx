@@ -8,13 +8,14 @@ import { useState, useCallback, ChangeEvent, DragEvent } from "react";
 import { useStore } from "@/lib/store";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
+import { suggestLatLng } from "@/ai/flows/suggest-lat-lng";
 
 export default function FileUploadPanel() {
     const [dragging, setDragging] = useState(false);
     const [loadingSample, setLoadingSample] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const { toast } = useToast();
-    const { rawData, setRawData, setData, setColumns, setColumnTypes } = useStore();
+    const { rawData, setRawData, setData, setColumns, setColumnTypes, setMappedColumns, setAiError } = useStore();
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -76,8 +77,42 @@ export default function FileUploadPanel() {
         return types;
     }
 
+    const runAiMapping = async (columns: string[]) => {
+        try {
+            setAiError(null);
+            toast({
+                title: "AI Mapping",
+                description: "Analyzing columns to find latitude and longitude...",
+            });
+            const suggestions = await suggestLatLng({ columnNames: columns });
+            if (suggestions.latitude && suggestions.longitude) {
+                setMappedColumns({
+                    latitude: suggestions.latitude,
+                    longitude: suggestions.longitude,
+                });
+                toast({
+                    title: "AI Mapping Successful",
+                    description: `Latitude and Longitude columns have been automatically mapped.`,
+                });
+            } else {
+                 toast({
+                    variant: 'default',
+                    title: "AI Mapping",
+                    description: "Could not automatically determine latitude and longitude columns.",
+                });
+            }
+        } catch (error: any) {
+            setAiError({
+                message: error.message || "Could not run AI column mapping.",
+                sourceFile: "src/ai/flows/suggest-lat-lng.ts"
+            });
+        }
+    }
+
     const processFile = async (file: File) => {
         setIsProcessing(true);
+        setMappedColumns({ latitude: null, longitude: null, value: null, category: null }); // Reset mapping
+        
         const reader = new FileReader();
         
         reader.onload = async (e) => {
@@ -119,11 +154,15 @@ export default function FileUploadPanel() {
                     setData(parsedData);
                     setColumns(columns);
                     setColumnTypes(columnTypes);
-                    setRawData({ name: file.name, content: fileContentStr });
+                    setRawData({ name: file.name, content: fileContentStr.substring(0, 5000) });
                     toast({
                         title: "File Processed Successfully",
                         description: `Found ${parsedData.length} rows and ${columns.length} columns.`,
                     });
+                    
+                    // Run AI mapping
+                    await runAiMapping(columns);
+
                 } else {
                     throw new Error("No data found in the file.");
                 }
