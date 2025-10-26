@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useStore, LayerProps } from "@/lib/store";
@@ -18,7 +17,8 @@ export default function SmartLayerSuggestionsPanel() {
         layerSuggestions, 
         setLayerSuggestions, 
         addLayer,
-        layers
+        layers,
+        setAiError
     } = useStore();
     const [loading, setLoading] = useState(false);
     const { toast } = useToast();
@@ -30,6 +30,7 @@ export default function SmartLayerSuggestionsPanel() {
 
         setLoading(true);
         setLayerSuggestions([]); // Clear previous suggestions
+        setAiError(null); // Clear previous errors
         try {
             const suggestions = await suggestLayers({
                 columnTypes,
@@ -41,10 +42,9 @@ export default function SmartLayerSuggestionsPanel() {
             });
             setLayerSuggestions(suggestions);
         } catch (error: any) {
-            toast({
-                variant: 'destructive',
-                title: "AI Suggestion Failed",
-                description: error.message || "Could not generate layer suggestions.",
+             setAiError({
+                message: error.message || "Could not generate layer suggestions.",
+                sourceFile: "src/ai/flows/smart-layer-suggestions.ts"
             });
             // Ensure suggestions are cleared on failure
             setLayerSuggestions([]);
@@ -56,12 +56,15 @@ export default function SmartLayerSuggestionsPanel() {
     // Effect to automatically fetch suggestions when mappings change
     useEffect(() => {
         if (hasLatLng) {
-            fetchSuggestions();
+            const timer = setTimeout(() => {
+                fetchSuggestions();
+            }, 500); // Debounce to avoid rapid calls
+            return () => clearTimeout(timer);
         } else {
             // Clear suggestions if lat/lng are unmapped
             setLayerSuggestions([]);
         }
-    }, [hasLatLng, mappedColumns.value, mappedColumns.category]);
+    }, [hasLatLng, mappedColumns.value, mappedColumns.category, columnNames, columnTypes]);
 
 
     const handleAddLayer = (suggestion: SmartLayerSuggestionsOutput[0]) => {

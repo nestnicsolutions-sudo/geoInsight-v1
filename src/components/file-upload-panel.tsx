@@ -15,7 +15,7 @@ export default function FileUploadPanel() {
     const [loadingSample, setLoadingSample] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const { toast } = useToast();
-    const { rawData, setRawData, setData, setColumns, setMappedColumns, setColumnTypes } = useStore();
+    const { rawData, setRawData, setData, setColumns, setMappedColumns, setColumnTypes, setAiError } = useStore();
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -79,6 +79,7 @@ export default function FileUploadPanel() {
 
     const processFile = async (file: File) => {
         setIsProcessing(true);
+        setAiError(null); // Clear any previous errors
         const reader = new FileReader();
         
         reader.onload = async (e) => {
@@ -98,7 +99,7 @@ export default function FileUploadPanel() {
                     const sheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[sheetName];
                     parsedData = XLSX.utils.sheet_to_json(worksheet);
-                    fileContentStr = JSON.stringify(parsedData, null, 2);
+                    fileContentStr = JSON.stringify(parsedData.slice(0, 50), null, 2);
                 } else if (file.name.endsWith('.json') || file.name.endsWith('.geojson')) {
                     fileContentStr = content as string;
                     const jsonData = JSON.parse(fileContentStr);
@@ -147,10 +148,9 @@ export default function FileUploadPanel() {
                             description: "Columns have been automatically mapped. Please review.",
                         });
                     } catch (aiError: any) {
-                         toast({
-                            variant: 'destructive',
-                            title: "AI Mapping Failed",
-                            description: aiError.message || "Could not suggest column mappings.",
+                         setAiError({
+                            message: aiError.message || "An unknown AI error occurred.",
+                            sourceFile: "src/ai/flows/suggest-column-mapping.ts"
                         });
                     }
 
