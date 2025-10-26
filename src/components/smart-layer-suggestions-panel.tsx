@@ -89,6 +89,10 @@ export default function SmartLayerSuggestionsPanel() {
             </div>
         );
     }
+    
+    const availableSuggestions = layerSuggestions.filter(suggestion => 
+      !layers.some(l => l.type === suggestion.layerType)
+    );
 
     return (
         <div className="space-y-4 mb-4">
@@ -105,10 +109,9 @@ export default function SmartLayerSuggestionsPanel() {
                 </div>
             )}
 
-            {!loading && layerSuggestions.length > 0 && (
+            {!loading && availableSuggestions.length > 0 && (
                  <div className="grid gap-3">
-                    {layerSuggestions.map((suggestion, index) => {
-                        const isAlreadyAdded = layers.some(l => l.type === suggestion.layerType);
+                    {availableSuggestions.map((suggestion, index) => {
                         return (
                             <Card key={index} className="bg-background/50">
                                 <CardHeader className="p-4">
@@ -121,9 +124,9 @@ export default function SmartLayerSuggestionsPanel() {
                                      <CardDescription>{suggestion.rationale}</CardDescription>
                                 </CardContent>
                                 <CardFooter className="p-4 pt-0">
-                                    <Button size="sm" className="w-full" onClick={() => handleAddLayer(suggestion)} disabled={isAlreadyAdded}>
+                                    <Button size="sm" className="w-full" onClick={() => handleAddLayer(suggestion)}>
                                         <Plus className="w-4 h-4 mr-2" />
-                                        {isAlreadyAdded ? "Layer Added" : "Add Layer"}
+                                        Add Layer
                                     </Button>
                                 </CardFooter>
                             </Card>
@@ -132,6 +135,12 @@ export default function SmartLayerSuggestionsPanel() {
                 </div>
             )}
             
+            {!loading && layerSuggestions.length > 0 && availableSuggestions.length === 0 && (
+                 <div className="flex flex-col items-center justify-center h-24 p-4 text-sm text-center border border-dashed rounded-lg bg-muted/20 text-muted-foreground">
+                    <span>All AI suggestions have been added to the map.</span>
+                </div>
+            )}
+
             {!loading && layerSuggestions.length === 0 && hasLatLng && (
                 <div className="flex flex-col items-center justify-center h-24 p-4 text-sm text-center border border-dashed rounded-lg bg-muted/20 text-muted-foreground">
                     <span>The AI couldn't find any specific layer suggestions for this data.</span>
