@@ -12,11 +12,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, Plus, Trash2, ChevronsUpDown } from "lucide-react";
 import { useStore, LayerProps } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 
 type LayerType =
   | "ScatterplotLayer"
@@ -135,9 +136,12 @@ export default function LayerListPanel() {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        Add and configure your visualization layers.
-      </p>
+      <div className="flex items-center">
+        <Separator className="flex-1" />
+         <p className="px-2 text-xs text-muted-foreground">MANUAL</p>
+        <Separator className="flex-1" />
+      </div>
+     
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -146,7 +150,7 @@ export default function LayerListPanel() {
             disabled={data.length === 0}
           >
             <Plus className="mr-2 h-4 w-4" />
-            Add Layer
+            Add Layer Manually
             <ChevronDown className="ml-auto h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
@@ -170,17 +174,19 @@ export default function LayerListPanel() {
       </DropdownMenu>
 
       <div className="space-y-2">
+        <h3 className="text-sm font-medium text-muted-foreground">Active Layers</h3>
         {layers.length === 0 ? (
           <div className="flex items-center justify-center h-24 text-sm border border-dashed rounded-lg bg-muted/20 text-muted-foreground">
             No layers added yet.
           </div>
         ) : (
           layers.map((layer, index) => (
-            <Collapsible key={layer.id} className="p-3 text-sm border rounded-lg bg-secondary/50">
+            <Collapsible key={layer.id} defaultOpen={true} className="p-3 text-sm border rounded-lg bg-secondary/50">
               <div className="flex items-center justify-between">
                 <CollapsibleTrigger className="flex items-center w-full text-left">
+                   <ChevronsUpDown className="h-4 w-4 mr-2" />
                   <span className="font-medium">
-                    Layer {index + 1}: {capitalizeFirstLetter(layer.id.split('-')[0])}
+                    {capitalizeFirstLetter(layer.type.replace('Layer', ''))} Layer
                   </span>
                   <ChevronDown className="h-4 w-4 ml-auto transition-transform [&[data-state=open]]:rotate-180" />
                 </CollapsibleTrigger>

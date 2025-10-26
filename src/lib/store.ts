@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import type { ViewState } from 'react-map-gl';
+import type { SmartLayerSuggestionsOutput } from '@/ai/flows/smart-layer-suggestions';
 
 // Define the structure for raw data
 interface RawData {
@@ -36,8 +37,14 @@ interface AppState {
     columns: string[];
     setColumns: (columns: string[]) => void;
 
+    columnTypes: Record<string, string>;
+    setColumnTypes: (types: Record<string, string>) => void;
+
     mappedColumns: MappedColumns;
     setMappedColumns: (mappedColumns: Partial<MappedColumns>) => void;
+
+    layerSuggestions: SmartLayerSuggestionsOutput;
+    setLayerSuggestions: (suggestions: SmartLayerSuggestionsOutput) => void;
 
     layers: LayerProps[];
     addLayer: (layer: LayerProps) => void;
@@ -63,6 +70,9 @@ export const useStore = create<AppState>()(
 
       columns: [],
       setColumns: (columns) => set({ columns }),
+
+      columnTypes: {},
+      setColumnTypes: (types) => set({ columnTypes: types }),
       
       mappedColumns: {
         latitude: null,
@@ -71,6 +81,9 @@ export const useStore = create<AppState>()(
         category: null,
       },
       setMappedColumns: (mappedColumns) => set(state => ({ mappedColumns: { ...state.mappedColumns, ...mappedColumns }})),
+
+      layerSuggestions: [],
+      setLayerSuggestions: (suggestions) => set({ layerSuggestions: suggestions }),
 
       layers: [],
       addLayer: (layer) => set(state => ({ layers: [...state.layers, layer] })),

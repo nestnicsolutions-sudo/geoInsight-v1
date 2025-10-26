@@ -68,7 +68,7 @@ const prompt = ai.definePrompt({
   output: {schema: SmartLayerSuggestionsOutputSchema},
   prompt: `You are an expert in data visualization using Deck.GL.
 
-  Based on the following data column types and mappings, suggest suitable Deck.GL layer types and initial configurations. Provide a rationale for each suggestion.
+  Based on the following data column types and mappings, suggest up to 3 suitable Deck.GL layer types and initial configurations. Provide a rationale for each suggestion.
 
   Column Types: {{{JSON.stringify(columnTypes)}}}
   Column Names: {{{JSON.stringify(columnNames)}}}
@@ -77,21 +77,27 @@ const prompt = ai.definePrompt({
   Mapped Value Column: {{{mappedValue}}}
   Mapped Category Column: {{{mappedCategory}}}
 
-  Consider these layer types:
-  - ScatterplotLayer: Good for visualizing individual points with size and color based on values.
-  - HexagonLayer: Good for aggregating data into hexagonal bins to show density.
-  - HeatmapLayer: Good for showing intensity as a color gradient.
-  - GeoJsonLayer: Good for visualizing geographic boundaries and polygons.
-  - ArcLayer: Good for showing connections between origins and destinations.
-  - ScreenGridLayer: A faster alternative to HexagonLayer for large datasets.
-  - IconLayer: Use custom marker icons based on categories.
-  - ColumnLayer: Good for 3D vertical bars/columns representing metric values.
+  Guidelines:
+  - If latitude and longitude are present, ScatterplotLayer is almost always a good primary choice.
+  - If a 'value' column is mapped, consider layers that use it for aggregation or magnitude, like HeatmapLayer, HexagonLayer, or ColumnLayer.
+  - HexagonLayer is good for showing density of points in an area.
+  - HeatmapLayer shows intensity or density as a smooth color gradient.
+  - ColumnLayer is great for showing magnitude (like population or price) at specific lat/lon points in 3D.
+  - ScatterplotLayer can use the 'value' for radius and the 'category' for color.
+  - Only suggest layers that are appropriate for the provided mappings. For example, do not suggest ColumnLayer if there is no 'value' column.
+  
+  Available Layer Types:
+  - ScatterplotLayer
+  - HexagonLayer
+  - HeatmapLayer
+  - ColumnLayer
 
-  Return an array of layer suggestions, each with a layerType, initialConfiguration, and rationale. The output should be a valid JSON array.
-  The initialConfiguration must include appropriate fields from the schema like latitude, longitude, and radius.
-  The initialConfiguration must also include color range.
-  The initialConfiguration must include opacity.
-  The rationale should be short and concise, explaining why the suggested layer type is appropriate for the given data.
+  Return an array of layer suggestions. Each suggestion must include:
+  1.  'layerType': A valid Deck.GL layer name from the available list.
+  2.  'initialConfiguration': A JSON object with sensible default settings. This MUST include 'opacity' and a color configuration (like 'getFillColor' or 'colorRange'). For ScatterplotLayer, include radius settings. For HexagonLayer, include 'radius' and 'elevationScale'.
+  3.  'rationale': A short, concise explanation for why the layer is a good fit.
+
+  The output must be a valid JSON array.
   `,
 });
 

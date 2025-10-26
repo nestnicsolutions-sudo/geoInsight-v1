@@ -15,7 +15,7 @@ export default function FileUploadPanel() {
     const [loadingSample, setLoadingSample] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const { toast } = useToast();
-    const { rawData, setRawData, setData, setColumns, setMappedColumns } = useStore();
+    const { rawData, setRawData, setData, setColumns, setMappedColumns, setColumnTypes } = useStore();
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -51,6 +51,32 @@ export default function FileUploadPanel() {
         setDragging(false);
     };
 
+     const inferColumnTypes = (data: any[]) => {
+        if (data.length === 0) return {};
+        const firstRow = data[0];
+        const types: Record<string, string> = {};
+        for (const col in firstRow) {
+            const value = firstRow[col];
+            if (typeof value === 'number') {
+                types[col] = 'number';
+            } else if (typeof value === 'boolean') {
+                types[col] = 'boolean';
+            } else if (typeof value === 'string') {
+                types[col] = 'string';
+            } else if (value instanceof Date) {
+                types[col] = 'date';
+            } else {
+                 // Try to parse to number for CSVs
+                if (!isNaN(Number(value))) {
+                     types[col] = 'number';
+                } else {
+                    types[col] = 'string';
+                }
+            }
+        }
+        return types;
+    }
+
     const processFile = async (file: File) => {
         setIsProcessing(true);
         const reader = new FileReader();
@@ -65,8 +91,8 @@ export default function FileUploadPanel() {
 
                 if (file.name.endsWith('.csv')) {
                     fileContentStr = content as string;
-                    const result = Papa.parse(fileContentStr, { header: true, skipEmptyLines: true });
-                    parsedData = result.data;
+                    const result = Papa.parse(fileContentStr, { header: true, skipEmptyLines: true, dynamicTyping: true });
+                    parsedData = result.data as any[];
                 } else if (file.name.endsWith('.xlsx')) {
                     const workbook = XLSX.read(content, { type: 'array' });
                     const sheetName = workbook.SheetNames[0];
@@ -90,8 +116,10 @@ export default function FileUploadPanel() {
 
                 if (parsedData.length > 0) {
                     const columns = Object.keys(parsedData[0]);
+                    const columnTypes = inferColumnTypes(parsedData);
                     setData(parsedData);
                     setColumns(columns);
+                    setColumnTypes(columnTypes);
                     setRawData({ name: file.name, content: fileContentStr });
                     toast({
                         title: "File Processed Successfully",
