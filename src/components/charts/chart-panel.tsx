@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStore, ChartType } from "@/lib/store";
-import { BarChart, LineChart, PieChart } from "lucide-react";
+import { BarChart, LineChart, PieChart, AreaChart, ScatterChart, FileText } from "lucide-react";
 import { Separator } from "../ui/separator";
 
 export default function ChartPanel() {
@@ -98,6 +98,33 @@ export default function ChartPanel() {
                         <PieChart className="w-6 h-6 mb-1" />
                         <span>Pie</span>
                     </Button>
+                    <Button
+                        variant={chartConfig.type === 'histogram' ? 'default' : 'outline'}
+                        onClick={() => handleChartTypeChange('histogram')}
+                        disabled={!hasData}
+                        className="flex-col h-16"
+                    >
+                        <AreaChart className="w-6 h-6 mb-1" />
+                        <span>Histogram</span>
+                    </Button>
+                    <Button
+                        variant={chartConfig.type === 'scatter' ? 'default' : 'outline'}
+                        onClick={() => handleChartTypeChange('scatter')}
+                        disabled={!hasData}
+                         className="flex-col h-16"
+                    >
+                        <ScatterChart className="w-6 h-6 mb-1" />
+                        <span>Scatter</span>
+                    </Button>
+                     <Button
+                        variant={chartConfig.type === 'summary' ? 'default' : 'outline'}
+                        onClick={() => handleChartTypeChange('summary')}
+                        disabled={!hasData}
+                         className="flex-col h-16"
+                    >
+                        <FileText className="w-6 h-6 mb-1" />
+                        <span>Summary</span>
+                    </Button>
                 </div>
             </div>
 
@@ -184,6 +211,58 @@ export default function ChartPanel() {
                             </div>
                         </>
                     )}
+                    {chartConfig.type === 'histogram' && (
+                         <div className="space-y-2">
+                            <Label>Value</Label>
+                            <Select onValueChange={handleAxisChange('xAxis')} value={chartConfig.xAxis || ""} disabled={!hasData}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select column for distribution" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {numericColumns.map(col => <SelectItem key={col} value={col}>{col}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
+                    {chartConfig.type === 'scatter' && (
+                        <>
+                           <div className="space-y-2">
+                                <Label>X-Axis Value</Label>
+                                <Select onValueChange={handleAxisChange('xAxis')} value={chartConfig.xAxis || ""} disabled={!hasData}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select X-axis column" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {numericColumns.map(col => <SelectItem key={col} value={col}>{col}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Y-Axis Value</Label>
+                                <Select onValueChange={handleAxisChange('yAxis')} value={chartConfig.yAxis || ""} disabled={!hasData}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select Y-axis column" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {numericColumns.map(col => <SelectItem key={col} value={col}>{col}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </>
+                    )}
+                    {chartConfig.type === 'summary' && (
+                        <div className="space-y-2">
+                           <Label>Column for Summary</Label>
+                           <Select onValueChange={handleAxisChange('xAxis')} value={chartConfig.xAxis || ""} disabled={!hasData}>
+                               <SelectTrigger>
+                                   <SelectValue placeholder="Select a numeric column" />
+                               </SelectTrigger>
+                               <SelectContent>
+                                   {numericColumns.map(col => <SelectItem key={col} value={col}>{col}</SelectItem>)}
+                               </SelectContent>
+                           </Select>
+                       </div>
+                   )}
                 </div>
             )}
         </div>

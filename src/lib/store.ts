@@ -29,7 +29,8 @@ export interface AiError {
     sourceFile: string;
 }
 
-export type ChartType = 'bar' | 'line' | 'pie' | null;
+export type ChartType = 'bar' | 'line' | 'pie' | 'histogram' | 'scatter' | 'summary' | null;
+
 
 export interface ChartConfig {
     type: ChartType;
