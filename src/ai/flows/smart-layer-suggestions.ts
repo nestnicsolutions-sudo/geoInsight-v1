@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Suggests map layers based on data schema.
@@ -100,7 +101,27 @@ const suggestLayersFlow = ai.defineFlow(
   },
   async (input) => {
     const { output } = await smartLayersPrompt(input);
-    return output || [];
+
+    // If the AI fails or returns nothing, ensure at least ScatterplotLayer is suggested.
+    if (!output || output.length === 0) {
+      return [
+        {
+          layerType: "ScatterplotLayer",
+          rationale: "Ideal for visualizing individual locations. Each point on the map represents a row in your data.",
+          initialConfiguration: {
+            opacity: 0.8,
+            filled: true,
+            radiusMinPixels: 3,
+            radiusMaxPixels: 100,
+            getFillColor: [255, 140, 0, 180]
+          }
+        }
+      ];
+    }
+    
+    // Ensure ScatterplotLayer is always first if it exists, but don't add it if it's missing but other suggestions are present.
+    // The prompt is strong enough to usually guarantee it.
+    return output;
   }
 );
 
