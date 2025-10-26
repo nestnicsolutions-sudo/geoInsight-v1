@@ -100,11 +100,23 @@ export default function MapContainer() {
             controller={true}
             layers={layers} 
             onViewStateChange={e => handleViewportChange(e.viewState)}
-            getTooltip={({object}) => object && `
-              <div class="bg-card text-card-foreground p-2 rounded-md shadow-lg max-w-xs break-words">
-                ${Object.entries(object).map(([key, value]) => `<div><strong>${key}:</strong> ${value}</div>`).join('')}
+            getTooltip={({object}) => object && {
+              html: `
+              <div class="bg-card text-card-foreground p-2 rounded-md shadow-lg max-w-xs break-words" style="background: hsl(var(--card)); color: hsl(var(--card-foreground)); padding: 0.75rem; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                ${Object.entries(object).map(([key, value]) => {
+                  if (typeof value === 'object' && value !== null) {
+                    return `<div><strong>${key}:</strong> ${JSON.stringify(value)}</div>`;
+                  }
+                  return `<div><strong>${key}:</strong> ${value}</div>`;
+                }).join('')}
               </div>
-            `}
+              `,
+              style: {
+                background: 'transparent',
+                border: 'none',
+                boxShadow: 'none',
+              }
+            }}
         >
             <Map
                 mapboxAccessToken={MAPBOX_TOKEN}
