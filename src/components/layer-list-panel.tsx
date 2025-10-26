@@ -17,6 +17,7 @@ import { useStore, LayerProps } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
+import SmartLayerSuggestionsPanel from "./smart-layer-suggestions-panel";
 
 type LayerType =
   | "ScatterplotLayer"
@@ -165,6 +166,8 @@ export default function LayerListPanel() {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <SmartLayerSuggestionsPanel />
 
       <div className="space-y-2">
         <h3 className="text-sm font-medium text-muted-foreground">Active Layers</h3>

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import type { ViewState } from 'react-map-gl';
+import { SmartLayerSuggestionsOutput } from '@/ai/flows/smart-layer-suggestions';
 
 // Define the structure for raw data
 interface RawData {
@@ -59,6 +60,9 @@ interface AppState {
     // AI state
     aiError: AiError | null;
     setAiError: (error: AiError | null) => void;
+    layerSuggestions: SmartLayerSuggestionsOutput;
+    setLayerSuggestions: (suggestions: SmartLayerSuggestionsOutput) => void;
+
 }
 
 export const useStore = create<AppState>()(
@@ -108,6 +112,8 @@ export const useStore = create<AppState>()(
 
       aiError: null,
       setAiError: (error) => set({ aiError: error }),
+      layerSuggestions: [],
+      setLayerSuggestions: (suggestions) => set({ layerSuggestions: suggestions }),
     }),
     { name: 'GeoInsightStore' }
   )

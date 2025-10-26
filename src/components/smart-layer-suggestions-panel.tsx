@@ -12,7 +12,7 @@ import { Separator } from "./ui/separator";
 export default function SmartLayerSuggestionsPanel() {
     const { 
         mappedColumns, 
-        columnNames, 
+        columns: columnNames,
         columnTypes, 
         layerSuggestions, 
         setLayerSuggestions, 
