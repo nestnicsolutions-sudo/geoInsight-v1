@@ -32,6 +32,11 @@ export default function MapContainer() {
   const { resolvedTheme } = useTheme();
   const [mapStyle, setMapStyle] = useState('mapbox://styles/mapbox/dark-v11');
   const [selectedObject, setSelectedObject] = useState<DataRecord | null>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     if (resolvedTheme) {
@@ -98,6 +103,10 @@ export default function MapContainer() {
     }).filter(Boolean);
   }, [layerProps, data, mappedColumns]);
 
+  if (!isClient) {
+    return null;
+  }
+  
   if (!MAPBOX_TOKEN) {
     return (
         <div className="flex h-full w-full items-center justify-center bg-muted">
