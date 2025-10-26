@@ -100,22 +100,41 @@ export default function MapContainer() {
             controller={true}
             layers={layers} 
             onViewStateChange={e => handleViewportChange(e.viewState)}
-            getTooltip={({object}) => object && {
-              html: `
-              <div class="bg-card text-card-foreground p-2 rounded-md shadow-lg max-w-xs break-words" style="background: hsl(var(--card)); color: hsl(var(--card-foreground)); padding: 0.75rem; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-                ${Object.entries(object).map(([key, value]) => {
-                  if (typeof value === 'object' && value !== null) {
-                    return `<div><strong>${key}:</strong> ${JSON.stringify(value)}</div>`;
+            getTooltip={({object}) => {
+                if (!object) return null;
+                
+                const entries = Object.entries(object);
+                const maxVisible = 7;
+                const visibleEntries = entries.slice(0, maxVisible);
+
+                const html = `
+                  <div style="background: hsl(var(--card)); color: hsl(var(--card-foreground)); padding: 0.5rem 0.75rem; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); max-width: 280px; font-family: sans-serif; font-size: 0.8rem; line-height: 1.4;">
+                    <div style="display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 0.75rem;">
+                      ${visibleEntries.map(([key, value]) => {
+                        let displayValue = value;
+                        if (typeof value === 'object' && value !== null) {
+                          displayValue = JSON.stringify(value);
+                        } else if (typeof value === 'string' && value.length > 30) {
+                            displayValue = value.substring(0, 30) + '...';
+                        }
+                        return `
+                          <div style="font-weight: 600; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${key}</div>
+                          <div style="white-space: nowrap; text-overflow: ellipsis; overflow: hidden; opacity: 0.8;">${displayValue}</div>
+                        `;
+                      }).join('')}
+                    </div>
+                    ${entries.length > maxVisible ? `<div style="margin-top: 0.5rem; border-top: 1px solid hsl(var(--border)); padding-top: 0.5rem; font-size: 0.7rem; opacity: 0.6;">+${entries.length - maxVisible} more properties</div>` : ''}
+                  </div>
+                `;
+
+                return {
+                  html,
+                  style: {
+                    background: 'transparent',
+                    border: 'none',
+                    boxShadow: 'none',
                   }
-                  return `<div><strong>${key}:</strong> ${value}</div>`;
-                }).join('')}
-              </div>
-              `,
-              style: {
-                background: 'transparent',
-                border: 'none',
-                boxShadow: 'none',
-              }
+                };
             }}
         >
             <Map
