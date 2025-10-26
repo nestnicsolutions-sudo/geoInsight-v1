@@ -102,28 +102,53 @@ const suggestLayersFlow = ai.defineFlow(
     outputSchema: SmartLayerSuggestionsOutputSchema,
   },
   async (input) => {
-    const { output } = await smartLayersPrompt(input);
+    try {
+      const { output } = await smartLayersPrompt(input);
 
-    // If the AI fails or returns nothing, ensure at least ScatterplotLayer is suggested.
-    if (!output || output.length === 0) {
-      return [
-        {
-          layerType: "ScatterplotLayer",
-          rationale: "Ideal for visualizing individual locations. Each point on the map represents a row in your data.",
-          initialConfiguration: {
-            opacity: 0.8,
-            filled: true,
-            radiusMinPixels: 3,
-            radiusMaxPixels: 100,
-            getFillColor: [255, 140, 0, 180]
-          }
-        }
-      ];
+      // If the AI fails or returns an empty list, ensure at least ScatterplotLayer is suggested.
+      if (!output || output.length === 0) {
+        throw new Error("AI returned no suggestions.");
+      }
+      
+      // Ensure ScatterplotLayer is always first if the AI provided multiple suggestions but forgot the order.
+      const scatterplotIndex = output.findIndex(s => s.layerType === 'ScatterplotLayer');
+      if (scatterplotIndex > 0) {
+        const scatterplotSuggestion = output.splice(scatterplotIndex, 1)[0];
+        output.unshift(scatterplotSuggestion);
+      } else if (scatterplotIndex === -1) {
+        // If the AI completely forgot to add Scatterplot, add it manually.
+         output.unshift({
+            layerType: "ScatterplotLayer",
+            rationale: "Ideal for visualizing individual locations. Each point on the map represents a row in your data.",
+            initialConfiguration: {
+                opacity: 0.8,
+                filled: true,
+                radiusMinPixels: 3,
+                radiusMaxPixels: 100,
+                getFillColor: [255, 140, 0, 180]
+            }
+        });
+      }
+      
+      return output;
+
+    } catch (error) {
+        console.error("Error in suggestLayersFlow, returning default.", error);
+        // As a final fallback, if any error occurs, return the default ScatterplotLayer.
+        return [
+            {
+                layerType: "ScatterplotLayer",
+                rationale: "Ideal for visualizing individual locations. Each point on the map represents a row in your data.",
+                initialConfiguration: {
+                    opacity: 0.8,
+                    filled: true,
+                    radiusMinPixels: 3,
+                    radiusMaxPixels: 100,
+                    getFillColor: [255, 140, 0, 180]
+                }
+            }
+        ];
     }
-    
-    // Ensure ScatterplotLayer is always first if it exists, but don't add it if it's missing but other suggestions are present.
-    // The prompt is strong enough to usually guarantee it.
-    return output;
   }
 );
 
