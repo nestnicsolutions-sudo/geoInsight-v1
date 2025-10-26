@@ -11,6 +11,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const SmartLayerSuggestionsInputSchema = z.object({
+  dataSample: z.string().describe("A stringified sample of the first few rows of the user's data (e.g., CSV or JSON format)."),
   columnTypes: z.object({}).catchall(z.string()).describe("A map of column names to their data types (e.g., {latitude: 'number', city: 'string'})."),
   columnNames: z.array(z.string()).describe("A list of all column names in the uploaded data."),
   mappedLatitude: z.string().nullable().describe("The column name mapped to latitude."),
@@ -37,11 +38,15 @@ const smartLayersPrompt = ai.definePrompt({
     name: 'smartLayersPrompt',
     input: { schema: SmartLayerSuggestionsInputSchema },
     output: { schema: SmartLayerSuggestionsOutputSchema },
-    prompt: `You are a GIS (Geographic Information System) expert specializing in data visualization with deck.gl. Your task is to suggest the best deck.gl layers for a given dataset schema.
+    prompt: `You are a GIS (Geographic Information System) expert specializing in data visualization with deck.gl. Your task is to suggest the best deck.gl layers for a given dataset.
 
-Analyze the user's data based on the provided column names, their data types, and how they've been mapped.
+Analyze the user's data based on the provided data sample, column names, data types, and how they've been mapped.
 
-Here is the data schema:
+Here is the data schema and a sample:
+- Data Sample (first few rows):
+\`\`\`
+{{{dataSample}}}
+\`\`\`
 - All Column Names: {{{JSON.stringify(columnNames)}}}
 - Column Data Types: {{{JSON.stringify(columnTypes)}}}
 - Mapped Latitude Column: {{mappedLatitude}}
@@ -49,14 +54,14 @@ Here is the data schema:
 - Mapped Value/Metric Column: {{mappedValue}}
 - Mapped Category Column: {{mappedCategory}}
 
-Based on this schema, provide up to 3 relevant layer suggestions from the following list: ["ScatterplotLayer", "HeatmapLayer", "HexagonLayer", "ScreenGridLayer", "ColumnLayer"].
+Based on this schema and data sample, provide up to 3 relevant layer suggestions from the following list: ["ScatterplotLayer", "HeatmapLayer", "HexagonLayer", "ScreenGridLayer", "ColumnLayer"].
 
 Your suggestions MUST follow these rules:
 1.  **Guarantee a ScatterplotLayer**: You MUST ALWAYS suggest "ScatterplotLayer" as the first option. This layer is the most fundamental way to visualize individual data points and should always be available.
-2.  **Suggest Density Layers**: If the dataset is suitable, suggest "HeatmapLayer", "HexagonLayer", or "ScreenGridLayer" for showing density.
+2.  **Suggest Density Layers**: If the dataset appears to represent point data (not polygons or lines), suggest "HeatmapLayer", "HexagonLayer", or "ScreenGridLayer" for showing density.
     -   HeatmapLayer: Good for showing general density hotspots without aggregation.
-    -   HexagonLayer/ScreenGridLayer: Good for aggregating points into bins to see density patterns. Suggest HexagonLayer if a 'mappedValue' is available to influence the height of the hexagons.
-3.  **Suggest Magnitude Layer**: If a 'mappedValue' column is present and is a number, suggest "ColumnLayer". This is excellent for visualizing magnitude at specific locations using 3D columns.
+    -   HexagonLayer/ScreenGridLayer: Good for aggregating points into bins to see density patterns. Suggest HexagonLayer if a 'mappedValue' is available and appears to be a good candidate for aggregation (e.g., sales, population).
+3.  **Suggest Magnitude Layer**: If a 'mappedValue' column is present and its values in the data sample are numeric and seem to represent magnitude (e.g., height, price, count), suggest "ColumnLayer". This is excellent for visualizing magnitude at specific locations using 3D columns.
 4.  **Provide Rationale and Config**: For each suggestion, provide a concise 'rationale' explaining its purpose and a valid 'initialConfiguration' object. Do not include 'id' or 'data' properties in the configuration. Ensure color values are RGBA arrays (e.g., [255, 140, 0, 180]).
 
 Example Output:

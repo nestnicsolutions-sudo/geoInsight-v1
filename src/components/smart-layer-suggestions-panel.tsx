@@ -18,7 +18,8 @@ export default function SmartLayerSuggestionsPanel() {
         setLayerSuggestions, 
         addLayer,
         layers,
-        setAiError
+        setAiError,
+        rawData
     } = useStore();
     const [loading, setLoading] = useState(false);
     const { toast } = useToast();
@@ -26,13 +27,14 @@ export default function SmartLayerSuggestionsPanel() {
     const hasLatLng = mappedColumns.latitude && mappedColumns.longitude;
 
     const fetchSuggestions = async () => {
-        if (!hasLatLng) return;
+        if (!hasLatLng || !rawData?.content) return;
 
         setLoading(true);
         setLayerSuggestions([]); // Clear previous suggestions
         setAiError(null); // Clear previous errors
         try {
             const suggestions = await suggestLayers({
+                dataSample: rawData.content,
                 columnTypes,
                 columnNames,
                 mappedLatitude: mappedColumns.latitude,
@@ -55,7 +57,7 @@ export default function SmartLayerSuggestionsPanel() {
 
     // Effect to automatically fetch suggestions when mappings change
     useEffect(() => {
-        if (hasLatLng) {
+        if (hasLatLng && rawData?.content) {
             const timer = setTimeout(() => {
                 fetchSuggestions();
             }, 500); // Debounce to avoid rapid calls
@@ -64,7 +66,7 @@ export default function SmartLayerSuggestionsPanel() {
             // Clear suggestions if lat/lng are unmapped
             setLayerSuggestions([]);
         }
-    }, [hasLatLng, mappedColumns.value, mappedColumns.category, columnNames, columnTypes]);
+    }, [hasLatLng, mappedColumns.value, mappedColumns.category, columnNames, columnTypes, rawData]);
 
 
     const handleAddLayer = (suggestion: SmartLayerSuggestionsOutput[0]) => {
