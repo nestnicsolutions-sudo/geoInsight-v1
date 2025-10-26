@@ -51,14 +51,13 @@ Here is the data schema:
 
 Based on this schema, provide up to 3 relevant layer suggestions from the following list: ["ScatterplotLayer", "HeatmapLayer", "HexagonLayer", "ScreenGridLayer", "ColumnLayer"].
 
-Your suggestions should follow these rules:
-1.  **ScatterplotLayer**: Always suggest this as the default for visualizing individual data points.
-2.  **HeatmapLayer**: Suggest this if the user wants to see the density of points, especially for large datasets. It does not use a value or category column.
-3.  **HexagonLayer**: Suggest this for aggregating points into hexagonal bins. It's great for understanding density and can use the 'mappedValue' to calculate the height of the hexagons.
-4.  **ColumnLayer**: Suggest this if there is a 'mappedValue' present. It's good for showing magnitude at specific lat/lon points with 3D columns.
-5.  **ScreenGridLayer**: Suggest this for a fast, 2D grid-based aggregation showing density, especially if performance is a concern.
-
-For each suggestion, provide a 'rationale' explaining why it's a good choice and a valid 'initialConfiguration' object with sensible defaults for a deck.gl layer. Do not include 'id' or 'data' properties in the configuration. Ensure color values are RGBA arrays (e.g., [255, 140, 0, 180]).
+Your suggestions MUST follow these rules:
+1.  **Guarantee a ScatterplotLayer**: You MUST ALWAYS suggest "ScatterplotLayer" as the first option. This layer is the most fundamental way to visualize individual data points and should always be available.
+2.  **Suggest Density Layers**: If the dataset is suitable, suggest "HeatmapLayer", "HexagonLayer", or "ScreenGridLayer" for showing density.
+    -   HeatmapLayer: Good for showing general density hotspots without aggregation.
+    -   HexagonLayer/ScreenGridLayer: Good for aggregating points into bins to see density patterns. Suggest HexagonLayer if a 'mappedValue' is available to influence the height of the hexagons.
+3.  **Suggest Magnitude Layer**: If a 'mappedValue' column is present and is a number, suggest "ColumnLayer". This is excellent for visualizing magnitude at specific locations using 3D columns.
+4.  **Provide Rationale and Config**: For each suggestion, provide a concise 'rationale' explaining its purpose and a valid 'initialConfiguration' object. Do not include 'id' or 'data' properties in the configuration. Ensure color values are RGBA arrays (e.g., [255, 140, 0, 180]).
 
 Example Output:
 [
