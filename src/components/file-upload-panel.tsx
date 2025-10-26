@@ -134,6 +134,8 @@ export default function FileUploadPanel() {
                         const validSuggestions = Object.entries(suggestions).reduce((acc, [key, value]) => {
                             if (value && columns.includes(value)) {
                                 acc[key as keyof typeof suggestions] = value;
+                            } else {
+                                acc[key as keyof typeof suggestions] = null;
                             }
                             return acc;
                         }, {} as Partial<typeof suggestions>);
