@@ -20,7 +20,7 @@ export default function ColumnMappingPanel() {
             <div className="space-y-4">
                 <div className="space-y-2">
                     <Label>Latitude</Label>
-                    <Select onValueChange={handleSelectChange('latitude')} value={mappedColumns.latitude || ''} disabled={!hasData}>
+                    <Select onValueChange={handleSelectChange('latitude')} value={mappedColumns.latitude || ""} disabled={!hasData}>
                         <SelectTrigger>
                             <SelectValue placeholder="Select latitude column" />
                         </SelectTrigger>
@@ -31,7 +31,7 @@ export default function ColumnMappingPanel() {
                 </div>
                 <div className="space-y-2">
                     <Label>Longitude</Label>
-                     <Select onValueChange={handleSelectChange('longitude')} value={mappedColumns.longitude || ''} disabled={!hasData}>
+                     <Select onValueChange={handleSelectChange('longitude')} value={mappedColumns.longitude || ""} disabled={!hasData}>
                         <SelectTrigger>
                             <SelectValue placeholder="Select longitude column" />
                         </SelectTrigger>
@@ -51,7 +51,7 @@ export default function ColumnMappingPanel() {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="none">None</SelectItem>
-                           {columns.map(col => <SelectItem key={col} value={col}>{col}</SelectItem>)}
+                           {columns.filter(c => c !== mappedColumns.latitude && c !== mappedColumns.longitude).map(col => <SelectItem key={col} value={col}>{col}</SelectItem>)}
                         </SelectContent>
                     </Select>
                 </div>
@@ -64,7 +64,7 @@ export default function ColumnMappingPanel() {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="none">None</SelectItem>
-                            {columns.map(col => <SelectItem key={col} value={col}>{col}</SelectItem>)}
+                            {columns.filter(c => c !== mappedColumns.latitude && c !== mappedColumns.longitude).map(col => <SelectItem key={col} value={col}>{col}</SelectItem>)}
                         </SelectContent>
                     </Select>
                 </div>

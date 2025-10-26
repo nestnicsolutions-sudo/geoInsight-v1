@@ -101,7 +101,14 @@ export default function FileUploadPanel() {
                     // AI-powered column mapping
                     try {
                         const suggestions = await suggestColumnMapping({ columnNames: columns });
-                        setMappedColumns(suggestions);
+                        const validSuggestions = Object.entries(suggestions).reduce((acc, [key, value]) => {
+                            if (value) {
+                                acc[key as keyof typeof suggestions] = value;
+                            }
+                            return acc;
+                        }, {} as Partial<typeof suggestions>);
+
+                        setMappedColumns(validSuggestions);
                         toast({
                             title: "AI Mapping Complete",
                             description: "Columns have been automatically mapped. Please review.",
