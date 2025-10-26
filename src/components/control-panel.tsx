@@ -7,7 +7,6 @@ import {
 import FileUploadPanel from "./file-upload-panel"
 import ColumnMappingPanel from "./column-mapping-panel"
 import LayerListPanel from "./layer-list-panel"
-import SmartLayerSuggestionsPanel from "./smart-layer-suggestions-panel"
 
 export default function ControlPanel() {
     return (
@@ -28,7 +27,6 @@ export default function ControlPanel() {
                 <AccordionItem value="item-3">
                     <AccordionTrigger className="text-base font-medium">3. Add Layers</AccordionTrigger>
                     <AccordionContent>
-                        <SmartLayerSuggestionsPanel />
                         <LayerListPanel />
                     </AccordionContent>
                 </AccordionItem>

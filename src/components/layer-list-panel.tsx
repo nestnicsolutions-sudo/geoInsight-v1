@@ -17,7 +17,6 @@ import { useStore, LayerProps } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 
 type LayerType =
   | "ScatterplotLayer"
@@ -136,12 +135,6 @@ export default function LayerListPanel() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center">
-        <Separator className="flex-1" />
-         <p className="px-2 text-xs text-muted-foreground">MANUAL</p>
-        <Separator className="flex-1" />
-      </div>
-     
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -150,7 +143,7 @@ export default function LayerListPanel() {
             disabled={data.length === 0}
           >
             <Plus className="mr-2 h-4 w-4" />
-            Add Layer Manually
+            Add Layer
             <ChevronDown className="ml-auto h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>

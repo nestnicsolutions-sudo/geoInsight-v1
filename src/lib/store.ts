@@ -24,11 +24,6 @@ export type LayerProps = {
     config: any;
 };
 
-interface AiError {
-    message: string;
-    sourceFile: string;
-}
-
 interface AppState {
     projectName: string;
     setProjectName: (name: string) => void;
@@ -48,9 +43,6 @@ interface AppState {
     mappedColumns: MappedColumns;
     setMappedColumns: (mappedColumns: Partial<MappedColumns>) => void;
 
-    layerSuggestions: SmartLayerSuggestionsOutput;
-    setLayerSuggestions: (suggestions: SmartLayerSuggestionsOutput) => void;
-
     layers: LayerProps[];
     addLayer: (layer: LayerProps) => void;
     removeLayer: (layerId: string) => void;
@@ -59,10 +51,6 @@ interface AppState {
     // map state
     viewport: ViewState;
     setViewport: (viewport: ViewState) => void;
-
-    // AI Error state
-    aiError: AiError | null;
-    setAiError: (error: AiError | null) => void;
 }
 
 export const useStore = create<AppState>()(
@@ -91,9 +79,6 @@ export const useStore = create<AppState>()(
       },
       setMappedColumns: (mappedColumns) => set(state => ({ mappedColumns: { ...state.mappedColumns, ...mappedColumns }})),
 
-      layerSuggestions: [],
-      setLayerSuggestions: (suggestions) => set({ layerSuggestions: suggestions }),
-
       layers: [],
       addLayer: (layer) => set(state => ({ layers: [...state.layers, layer] })),
       removeLayer: (layerId) => set(state => ({ layers: state.layers.filter(l => l.id !== layerId) })),
@@ -112,9 +97,6 @@ export const useStore = create<AppState>()(
         padding: { top: 20, bottom: 20, left: 20, right: 20 }
       },
       setViewport: (viewport) => set({ viewport }),
-
-      aiError: null,
-      setAiError: (error) => set({ aiError: error }),
     }),
     { name: 'GeoInsightStore' }
   )

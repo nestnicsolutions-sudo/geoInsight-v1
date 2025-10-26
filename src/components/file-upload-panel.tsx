@@ -8,14 +8,13 @@ import { useState, useCallback, ChangeEvent, DragEvent } from "react";
 import { useStore } from "@/lib/store";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
-import { suggestColumnMapping } from "@/ai/flows/suggest-column-mapping";
 
 export default function FileUploadPanel() {
     const [dragging, setDragging] = useState(false);
     const [loadingSample, setLoadingSample] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const { toast } = useToast();
-    const { rawData, setRawData, setData, setColumns, setMappedColumns, setColumnTypes, setAiError } = useStore();
+    const { rawData, setRawData, setData, setColumns, setColumnTypes } = useStore();
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -79,7 +78,6 @@ export default function FileUploadPanel() {
 
     const processFile = async (file: File) => {
         setIsProcessing(true);
-        setAiError(null); // Clear any previous errors
         const reader = new FileReader();
         
         reader.onload = async (e) => {
@@ -124,36 +122,8 @@ export default function FileUploadPanel() {
                     setRawData({ name: file.name, content: fileContentStr });
                     toast({
                         title: "File Processed Successfully",
-                        description: `Now analyzing data for smart mapping...`,
+                        description: `Found ${parsedData.length} rows and ${columns.length} columns.`,
                     });
-
-                    // AI-powered column mapping
-                    try {
-                        const dataPreview = JSON.stringify(parsedData.slice(0, 50));
-                        const suggestions = await suggestColumnMapping({ columnNames: columns, dataPreview });
-                        
-                        const validSuggestions = Object.entries(suggestions).reduce((acc, [key, value]) => {
-                            if (value && columns.includes(value)) {
-                                acc[key as keyof typeof suggestions] = value;
-                            } else {
-                                acc[key as keyof typeof suggestions] = null;
-                            }
-                            return acc;
-                        }, {} as Partial<typeof suggestions>);
-
-                        setMappedColumns(validSuggestions);
-
-                        toast({
-                            title: "AI Mapping Complete",
-                            description: "Columns have been automatically mapped. Please review.",
-                        });
-                    } catch (aiError: any) {
-                         setAiError({
-                            message: aiError.message || "An unknown AI error occurred.",
-                            sourceFile: "src/ai/flows/suggest-column-mapping.ts"
-                        });
-                    }
-
                 } else {
                     throw new Error("No data found in the file.");
                 }
