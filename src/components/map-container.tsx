@@ -83,8 +83,8 @@ export default function MapContainer() {
         return;
       }
 
-      // Check if deck is ready
-      if (deckRef.current?.deck) {
+      // Check if deck is ready and canvas is available
+      if (deckRef.current?.deck && deckRef.current.deck.canvas) {
         const { width, height } = deckRef.current.deck.canvas;
         if (width > 0 && height > 0) {
             try {
