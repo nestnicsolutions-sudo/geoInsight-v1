@@ -73,16 +73,20 @@ export default function MapContainer() {
       if (bounds[0][0] !== Infinity && deckRef.current?.deck) {
         const { width, height } = deckRef.current.deck.canvas;
         if (width > 0 && height > 0) {
-            const viewport = new WebMercatorViewport({ width, height });
-            const newViewport = viewport.fitBounds(bounds, {
-              padding: 80, 
-            });
+            try {
+                const viewport = new WebMercatorViewport({ width, height });
+                const newViewport = viewport.fitBounds(bounds, {
+                  padding: 80, 
+                });
 
-            setViewport({
-              ...viewport,
-              ...newViewport,
-              transitionDuration: 1000
-            });
+                setViewport({
+                  ...viewport,
+                  ...newViewport,
+                  transitionDuration: 1000
+                });
+            } catch (err) {
+                console.error("fitBounds failed:", err);
+            }
         }
       }
     } else {
