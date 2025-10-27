@@ -69,19 +69,21 @@ export default function MapContainer() {
         [[Infinity, Infinity], [-Infinity, -Infinity]]
       );
 
-      // Check if bounds are valid
+      // Check if bounds are valid and canvas is ready
       if (bounds[0][0] !== Infinity && deckRef.current?.deck) {
         const { width, height } = deckRef.current.deck.canvas;
-        const viewport = new WebMercatorViewport({ width, height });
-        const newViewport = viewport.fitBounds(bounds, {
-          padding: 80, 
-        });
+        if (width > 0 && height > 0) {
+            const viewport = new WebMercatorViewport({ width, height });
+            const newViewport = viewport.fitBounds(bounds, {
+              padding: 80, 
+            });
 
-        setViewport({
-          ...viewport,
-          ...newViewport,
-          transitionDuration: 1000
-        });
+            setViewport({
+              ...viewport,
+              ...newViewport,
+              transitionDuration: 1000
+            });
+        }
       }
     } else {
         setViewport(INITIAL_VIEWPORT);
