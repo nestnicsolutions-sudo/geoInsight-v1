@@ -86,7 +86,8 @@ export default function MapContainer() {
     } else {
         setViewport(INITIAL_VIEWPORT);
     }
-  }, [data, mappedColumns.latitude, mappedColumns.longitude]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, mappedColumns.latitude, mappedColumns.longitude, setViewport]);
 
   const handleViewportChange = (viewState: ViewState) => {
     setViewport(viewState);
@@ -244,5 +245,3 @@ export default function MapContainer() {
     </div>
   );
 }
-
-    
