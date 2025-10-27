@@ -124,7 +124,11 @@ export const useStore = create<AppState>()(
         bearing: 0,
         padding: { top: 20, bottom: 20, left: 20, right: 20 }
       },
-      setViewport: (viewport) => set(state => ({ viewport: {...state.viewport, ...viewport} })),
+      setViewport: (viewport) => {
+        setTimeout(() => {
+            set(state => ({ viewport: {...state.viewport, ...viewport} }))
+        }, 0);
+      },
 
       aiError: null,
       setAiError: (error) => set({ aiError: error }),

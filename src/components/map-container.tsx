@@ -100,6 +100,8 @@ export default function MapContainer() {
                 });
             } catch (err) {
                 console.error("fitBounds failed:", err);
+                // Fallback to initial viewport on error
+                setViewport(INITIAL_VIEWPORT);
             }
         }
       }
@@ -107,7 +109,8 @@ export default function MapContainer() {
         setViewport(INITIAL_VIEWPORT);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, mappedColumns.latitude, mappedColumns.longitude, setViewport]);
+  }, [data, mappedColumns.latitude, mappedColumns.longitude]);
+
 
   const handleViewportChange = (viewState: ViewState) => {
     setViewport(viewState);
