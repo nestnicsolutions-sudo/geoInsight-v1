@@ -56,7 +56,7 @@ export default function MapContainer() {
   }, [resolvedTheme]);
 
   useEffect(() => {
-    if (data.length > 0 && mappedColumns.latitude && mappedColumns.longitude) {
+    if (data.length > 0 && mappedColumns.latitude && mappedColumns.longitude && layerProps.length > 0) {
       const points = data
         .map(d => [Number(d[mappedColumns.longitude!]), Number(d[mappedColumns.latitude!])])
         .filter(p => !isNaN(p[0]) && !isNaN(p[1]));
@@ -109,7 +109,7 @@ export default function MapContainer() {
         setViewport(INITIAL_VIEWPORT);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, mappedColumns.latitude, mappedColumns.longitude]);
+  }, [data, mappedColumns.latitude, mappedColumns.longitude, layerProps.length]);
 
 
   const handleViewportChange = (viewState: ViewState) => {
@@ -184,7 +184,7 @@ export default function MapContainer() {
     <div className="relative h-full w-full">
         <DeckGL
             ref={deckRef}
-            initialViewState={viewport}
+            initialViewState={INITIAL_VIEWPORT}
             controller={true}
             layers={layers}
             onClick={handleClick}
