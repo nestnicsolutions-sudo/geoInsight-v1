@@ -8,6 +8,16 @@ import { useState, useCallback, ChangeEvent, DragEvent } from "react";
 import { useStore } from "@/lib/store";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 
 export default function FileUploadPanel() {
     const [dragging, setDragging] = useState(false);
@@ -15,6 +25,7 @@ export default function FileUploadPanel() {
     const [isProcessing, setIsProcessing] = useState(false);
     const { toast } = useToast();
     const { rawData, setRawData, setData, setColumns, setColumnTypes, setMappedColumns, setAiError, layers, setLayerSuggestions } = useStore();
+    const [showVerifyDialog, setShowVerifyDialog] = useState(false);
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -105,6 +116,7 @@ export default function FileUploadPanel() {
                 title: "Automatic Mapping Successful",
                 description: `Latitude and Longitude columns have been automatically mapped.`,
             });
+            setShowVerifyDialog(true);
         } else {
              toast({
                 variant: 'default',
@@ -238,6 +250,20 @@ export default function FileUploadPanel() {
 
     return (
         <div className="space-y-4">
+             <AlertDialog open={showVerifyDialog} onOpenChange={setShowVerifyDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Please Verify Mapped Columns</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        GeoInsight AI has automatically mapped the latitude and longitude columns based on your data. Please go to the &quot;Map Columns&quot; section to verify that these are correct before adding layers.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogAction onClick={() => setShowVerifyDialog(false)}>Got it</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
             <div
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
