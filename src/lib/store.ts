@@ -68,6 +68,8 @@ interface AppState {
     // map state
     viewport: ViewState;
     setViewport: (viewport: Partial<ViewState>) => void;
+    baseMap: string;
+    setBaseMap: (baseMap: string) => void;
 
     // AI state
     aiError: AiError | null;
@@ -131,10 +133,10 @@ export const useStore = create<AppState>()(
         padding: { top: 20, bottom: 20, left: 20, right: 20 }
       },
       setViewport: (viewport) => {
-        setTimeout(() => {
-            set(state => ({ viewport: {...state.viewport, ...viewport} }))
-        }, 0);
+        set(state => ({ viewport: {...state.viewport, ...viewport} }))
       },
+      baseMap: 'mapbox://styles/mapbox/dark-v11',
+      setBaseMap: (baseMap) => set({ baseMap }),
 
       aiError: null,
       setAiError: (error) => set({ aiError: error }),

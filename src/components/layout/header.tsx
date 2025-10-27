@@ -1,5 +1,7 @@
 import { Map } from "lucide-react";
 import { UserNav } from "@/components/auth/user-nav";
+import { ThemeToggle } from "../theme-toggle";
+import { BaseMapToggle } from "../base-map-toggle";
 
 export default function Header() {
     return (
@@ -11,7 +13,9 @@ export default function Header() {
                         GeoInsight
                     </h1>
                 </div>
-                <div className="ml-auto flex items-center space-x-4">
+                <div className="ml-auto flex items-center space-x-2">
+                    <BaseMapToggle />
+                    <ThemeToggle />
                     <UserNav />
                 </div>
             </div>

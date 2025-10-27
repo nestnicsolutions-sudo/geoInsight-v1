@@ -29,85 +29,81 @@ const layerMap: any = {
 };
 
 export default function MapContainer() {
-  const { viewport, setViewport, layers: layerProps, data, mappedColumns, lastAddedLayerId } = useStore();
+  const { viewport, setViewport, layers: layerProps, data, mappedColumns, lastAddedLayerId, baseMap, setBaseMap } = useStore();
   const { resolvedTheme } = useTheme();
-  const [mapStyle, setMapStyle] = useState('mapbox://styles/mapbox/dark-v11');
   const [selectedObject, setSelectedObject] = useState<DataRecord | null>(null);
   const deckRef = useRef<DeckGL>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // Update map style based on theme
+  // Update base map based on theme
   useEffect(() => {
     if (resolvedTheme) {
-      setMapStyle(resolvedTheme === 'dark'
+      setBaseMap(resolvedTheme === 'dark'
         ? 'mapbox://styles/mapbox/dark-v11'
         : 'mapbox://styles/mapbox/light-v11'
       );
     }
-  }, [resolvedTheme]);
+  }, [resolvedTheme, setBaseMap]);
 
   // Auto-zoom to newly added layer
   useEffect(() => {
     if (!lastAddedLayerId) return;
 
     const timer = setTimeout(() => {
-      if (!deckRef.current?.deck?.canvas || deckRef.current.deck.canvas.width === 0) {
-        return;
-      }
-      
-      const newLayer = layerProps.find(l => l.id === lastAddedLayerId);
-      if (!newLayer) return;
-      
-      const layerData = newLayer.data || data;
-      if (!layerData || layerData.length === 0 || !mappedColumns.latitude || !mappedColumns.longitude) return;
+        if (!deckRef.current?.deck?.canvas || deckRef.current.deck.canvas.width === 0) {
+            return;
+        }
 
-      const points = layerData
-        .map((d: DataRecord) => [
-          Number(d[mappedColumns.longitude!]),
-          Number(d[mappedColumns.latitude!])
-        ])
-        .filter(p => !isNaN(p[0]) && !isNaN(p[1]));
+        const newLayer = layerProps.find(l => l.id === lastAddedLayerId);
+        if (!newLayer) return;
+        
+        const layerData = newLayer.data || data;
+        if (!layerData || layerData.length === 0 || !mappedColumns.latitude || !mappedColumns.longitude) return;
 
-      if (points.length === 0) return;
+        const points = layerData
+            .map((d: DataRecord) => [
+            Number(d[mappedColumns.longitude!]),
+            Number(d[mappedColumns.latitude!])
+            ])
+            .filter(p => !isNaN(p[0]) && !isNaN(p[1]));
 
-      const bounds: [[number, number], [number, number]] = points.reduce(
-        (acc, point) => [
-          [Math.min(acc[0][0], point[0]), Math.min(acc[0][1], point[1])],
-          [Math.max(acc[1][0], point[0]), Math.max(acc[1][1], point[1])]
-        ],
-        [[Infinity, Infinity], [-Infinity, -Infinity]]
-      );
-      
-      if (!isFinite(bounds[0][0]) || !isFinite(bounds[0][1]) || !isFinite(bounds[1][0]) || !isFinite(bounds[1][1])) {
-        return;
-      }
-      
-      const { width, height } = deckRef.current.deck.canvas;
-      
-      try {
-        const viewportObj = new WebMercatorViewport({ width, height });
-        const newViewport = viewportObj.fitBounds(bounds, {
-          padding: 80,
-        });
+        if (points.length === 0) return;
 
-        setIsTransitioning(true);
-        setViewport({
-          ...newViewport,
-          transitionDuration: 1000,
-        });
+        const bounds: [[number, number], [number, number]] = points.reduce(
+            (acc, point) => [
+            [Math.min(acc[0][0], point[0]), Math.min(acc[0][1], point[1])],
+            [Math.max(acc[1][0], point[0]), Math.max(acc[1][1], point[1])]
+            ],
+            [[Infinity, Infinity], [-Infinity, -Infinity]]
+        );
+        
+        if (!isFinite(bounds[0][0]) || !isFinite(bounds[0][1]) || !isFinite(bounds[1][0]) || !isFinite(bounds[1][1])) {
+            return;
+        }
+        
+        const { width, height } = deckRef.current.deck.canvas;
+        
+        try {
+            const viewportObj = new WebMercatorViewport({ width, height });
+            const newViewport = viewportObj.fitBounds(bounds, {
+            padding: 80,
+            });
 
-        // Ensure isTransitioning is reset after the transition duration
-        setTimeout(() => {
-            setIsTransitioning(false);
-        }, 1000);
+            setIsTransitioning(true);
+            setViewport({
+            ...newViewport,
+            transitionDuration: 1000,
+            });
+            setTimeout(() => {
+              setIsTransitioning(false);
+            }, 1000);
 
-      } catch (err) {
-        console.error("fitBounds failed:", err);
-      }
+        } catch (err) {
+            console.error("fitBounds failed:", err);
+        }
     }, 100);
 
     return () => clearTimeout(timer);
-
   }, [lastAddedLayerId]);
 
 
@@ -218,7 +214,7 @@ export default function MapContainer() {
         <Map
           {...viewport}
           mapboxAccessToken={MAPBOX_TOKEN}
-          mapStyle={mapStyle}
+          mapStyle={baseMap}
         />
       </DeckGL>
 
