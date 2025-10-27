@@ -18,7 +18,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { WebMercatorViewport } from '@deck.gl/core';
 
-
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
 const layerMap: any = {
@@ -45,83 +44,76 @@ export default function MapContainer() {
   const [selectedObject, setSelectedObject] = useState<DataRecord | null>(null);
   const deckRef = useRef<DeckGL>(null);
 
+  // Track last added layer for auto-zoom
+  const [lastAddedLayerId, setLastAddedLayerId] = useState<string | null>(null);
+
+  // Update map style based on theme
   useEffect(() => {
     if (resolvedTheme) {
-      setMapStyle(
-        resolvedTheme === 'dark'
-          ? 'mapbox://styles/mapbox/dark-v11'
-          : 'mapbox://styles/mapbox/light-v11'
+      setMapStyle(resolvedTheme === 'dark'
+        ? 'mapbox://styles/mapbox/dark-v11'
+        : 'mapbox://styles/mapbox/light-v11'
       );
     }
   }, [resolvedTheme]);
 
+  // Auto-zoom to newly added layer
   useEffect(() => {
-    if (data.length > 0 && mappedColumns.latitude && mappedColumns.longitude && layerProps.length > 0) {
-      // This is the key check: ensure the canvas is rendered with a valid size.
-      if (!deckRef.current?.deck?.canvas || deckRef.current.deck.canvas.width === 0) {
-        // If canvas is not ready, we can't calculate fitBounds, so we wait.
-        // This effect will re-run when the component updates.
-        return;
-      }
-
-      const points = data
-        .map(d => [Number(d[mappedColumns.longitude!]), Number(d[mappedColumns.latitude!])])
-        .filter(p => !isNaN(p[0]) && !isNaN(p[1]));
-
-      if (points.length === 0) {
-        setViewport(INITIAL_VIEWPORT);
-        return;
-      }
-      
-      const bounds: [[number, number], [number, number]] = points.reduce(
-        (acc, point) => {
-          return [
-            [Math.min(acc[0][0], point[0]), Math.min(acc[0][1], point[1])],
-            [Math.max(acc[1][0], point[0]), Math.max(acc[1][1], point[1])],
-          ];
-        },
-        [[Infinity, Infinity], [-Infinity, -Infinity]]
-      );
-
-      if (!isFinite(bounds[0][0]) || !isFinite(bounds[0][1]) || !isFinite(bounds[1][0]) || !isFinite(bounds[1][1])) {
-        console.error("Invalid bounds calculated:", bounds);
-        setViewport(INITIAL_VIEWPORT);
-        return;
-      }
-
-      try {
-        const { width, height } = deckRef.current.deck.canvas;
-        const viewport = new WebMercatorViewport({ width, height });
-        const newViewport = viewport.fitBounds(bounds, {
-          padding: 80, 
-        });
-
-        setViewport({
-          ...viewport,
-          ...newViewport,
-          transitionDuration: 1000
-        });
-      } catch (err) {
-          console.error("fitBounds failed:", err);
-          setViewport(INITIAL_VIEWPORT);
-      }
-    } else {
-        setViewport(INITIAL_VIEWPORT);
+    if (!deckRef.current?.deck?.canvas || deckRef.current.deck.canvas.width === 0 || layerProps.length === 0) {
+      return;
     }
-  // This dependency array ensures the effect runs when the critical data changes.
-  }, [data, mappedColumns.latitude, mappedColumns.longitude, layerProps.length]);
 
+    const newLayer = layerProps[layerProps.length - 1];
+    if (!newLayer || newLayer.id === lastAddedLayerId) {
+      return;
+    }
 
-  const handleViewportChange = (viewState: ViewState) => {
-    setViewport(viewState);
-  };
+    setLastAddedLayerId(newLayer.id);
+
+    // Use layer-specific data if available, fallback to global data
+    const layerData = (newLayer as any).data || data;
+    if (!layerData || layerData.length === 0) return;
+
+    const points = layerData
+      .map((d: DataRecord) => [
+        Number(d[mappedColumns.longitude!]),
+        Number(d[mappedColumns.latitude!])
+      ])
+      .filter((p: number[]) => !isNaN(p[0]) && !isNaN(p[1]));
+
+    if (points.length === 0) return;
+
+    const bounds: [[number, number], [number, number]] = points.reduce(
+      (acc, point) => [
+        [Math.min(acc[0][0], point[0]), Math.min(acc[0][1], point[1])],
+        [Math.max(acc[1][0], point[0]), Math.max(acc[1][1], point[1])]
+      ],
+      [[Infinity, Infinity], [-Infinity, -Infinity]]
+    );
+
+    // Safety check for invalid bounds
+    if (!isFinite(bounds[0][0]) || !isFinite(bounds[0][1]) || !isFinite(bounds[1][0]) || !isFinite(bounds[1][1])) {
+        console.error("Invalid bounds calculated:", bounds);
+        return;
+    }
+
+    const { width, height } = deckRef.current.deck.canvas;
+    const viewportObj = new WebMercatorViewport({ width, height });
+
+    try {
+      const fitted = viewportObj.fitBounds(bounds, { padding: 80 });
+      setViewport({ ...fitted, transitionDuration: 1000 });
+    } catch (err) {
+      console.error("fitBounds failed:", err);
+    }
+  }, [layerProps, data, mappedColumns.latitude, mappedColumns.longitude, lastAddedLayerId, setViewport]);
+
+  const handleViewportChange = (viewState: ViewState) => setViewport(viewState);
 
   const handleClick = ({ object }: { object?: DataRecord }) => {
-    if (object) {
-      setSelectedObject(object);
-    }
+    if (object) setSelectedObject(object);
   };
-  
+
   const layers = useMemo(() => {
     if (!mappedColumns.latitude || !mappedColumns.longitude) return [];
 
@@ -156,115 +148,98 @@ export default function MapContainer() {
           valueProps = { getElevationValue: (points: any[]) => points.reduce((sum, point) => sum + (mappedColumns.value ? Number(point.source[mappedColumns.value]) : 1), 0) };
           break;
         case "ScreenGridLayer":
-           valueProps = { getWeight: getValue };
+          valueProps = { getWeight: getValue };
           break;
         case "ColumnLayer":
           valueProps = { getElevation: getValue };
           break;
       }
-      
+
       return new LayerComponent({ ...baseProps, ...valueProps });
     }).filter(Boolean);
   }, [layerProps, data, mappedColumns]);
-  
+
   if (!MAPBOX_TOKEN) {
     return (
-        <div className="flex h-full w-full items-center justify-center bg-muted">
-            <div className="text-center p-4 rounded-md bg-card border border-destructive">
-                <h2 className="text-lg font-semibold text-destructive-foreground">Configuration Error</h2>
-                <p className="text-muted-foreground mt-2">
-                    Mapbox Access Token is not configured. Please set <code className="font-code bg-muted px-1 py-0.5 rounded">NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN</code> in your environment variables.
-                </p>
-            </div>
+      <div className="flex h-full w-full items-center justify-center bg-muted">
+        <div className="text-center p-4 rounded-md bg-card border border-destructive">
+          <h2 className="text-lg font-semibold text-destructive-foreground">Configuration Error</h2>
+          <p className="text-muted-foreground mt-2">
+            Mapbox Access Token is not configured. Please set <code className="font-code bg-muted px-1 py-0.5 rounded">NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN</code> in your environment variables.
+          </p>
         </div>
-    )
+      </div>
+    );
   }
 
   return (
     <div className="relative h-full w-full">
-        <DeckGL
-            ref={deckRef}
-            initialViewState={INITIAL_VIEWPORT}
-            controller={true}
-            layers={layers}
-            onClick={handleClick}
-            onViewStateChange={e => handleViewportChange(e.viewState)}
-            getTooltip={({object}) => {
-                if (!object) return null;
-                
-                const entries = Object.entries(object).filter(([key]) => key !== 'geometry');
-                const maxVisible = 5;
-                const visibleEntries = entries.slice(0, maxVisible);
+      <DeckGL
+        ref={deckRef}
+        initialViewState={INITIAL_VIEWPORT}
+        controller={true}
+        layers={layers}
+        onClick={handleClick}
+        onViewStateChange={e => handleViewportChange(e.viewState)}
+        getTooltip={({object}) => {
+          if (!object) return null;
+          const entries = Object.entries(object).filter(([key]) => key !== 'geometry');
+          const maxVisible = 5;
+          const visibleEntries = entries.slice(0, maxVisible);
+          const html = `
+            <div style="background: hsl(var(--card)); color: hsl(var(--card-foreground)); padding: 0.5rem 0.75rem; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); max-width: 250px; font-family: sans-serif; font-size: 0.75rem; line-height: 1.3;">
+              <div style="font-weight: 700; margin-bottom: 0.3rem; border-bottom: 1px solid hsl(var(--border)); padding-bottom: 0.3rem; font-size: 0.8rem;">
+                Location Details
+              </div>
+              <div style="display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 0.6rem;">
+                ${visibleEntries.map(([key, value]) => {
+                  let displayValue = value;
+                  if (typeof value === 'object' && value !== null) displayValue = '...';
+                  else if (typeof value === 'string' && value.length > 25) displayValue = value.substring(0, 25) + '...';
+                  return `
+                    <div style="font-weight: 600; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; opacity: 0.7;">${key}</div>
+                    <div style="white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${String(displayValue)}</div>
+                  `;
+                }).join('')}
+              </div>
+              ${entries.length > maxVisible ? `<div style="margin-top: 0.4rem; font-size: 0.65rem; opacity: 0.6;">+${entries.length - maxVisible} more (click to view)</div>` : ''}
+            </div>
+          `;
+          return { html, style: { background: 'transparent', border: 'none', boxShadow: 'none' } };
+        }}
+      >
+        <Map
+          {...viewport}
+          mapboxAccessToken={MAPBOX_TOKEN}
+          mapStyle={mapStyle}
+        />
+      </DeckGL>
 
-                const html = `
-                  <div style="background: hsl(var(--card)); color: hsl(var(--card-foreground)); padding: 0.5rem 0.75rem; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); max-width: 250px; font-family: sans-serif; font-size: 0.75rem; line-height: 1.3;">
-                    <div style="font-weight: 700; margin-bottom: 0.3rem; border-bottom: 1px solid hsl(var(--border)); padding-bottom: 0.3rem; font-size: 0.8rem;">
-                      Location Details
-                    </div>
-                    <div style="display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 0.6rem;">
-                      ${visibleEntries.map(([key, value]) => {
-                        let displayValue = value;
-                        if (typeof value === 'object' && value !== null) {
-                          displayValue = '...';
-                        } else if (typeof value === 'string' && value.length > 25) {
-                            displayValue = value.substring(0, 25) + '...';
-                        }
-                        return `
-                          <div style="font-weight: 600; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; opacity: 0.7;">${key}</div>
-                          <div style="white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${String(displayValue)}</div>
-                        `;
-                      }).join('')}
-                    </div>
-                    ${entries.length > maxVisible ? `<div style="margin-top: 0.4rem; font-size: 0.65rem; opacity: 0.6;">+${entries.length - maxVisible} more (click to view)</div>` : ''}
-                  </div>
-                `;
-
-                return {
-                  html,
-                  style: {
-                    background: 'transparent',
-                    border: 'none',
-                    boxShadow: 'none',
-                  }
-                };
-            }}
-        >
-            <Map
-                {...viewport}
-                mapboxAccessToken={MAPBOX_TOKEN}
-                mapStyle={mapStyle}
-            />
-        </DeckGL>
-
-        <Dialog open={!!selectedObject} onOpenChange={() => setSelectedObject(null)}>
-            <DialogContent className="sm:max-w-[425px] md:max-w-lg">
-                <DialogHeader>
-                    <DialogTitle>Location Details</DialogTitle>
-                    <DialogDescription>
-                        Full data for the selected point.
-                    </DialogDescription>
-                </DialogHeader>
-                <ScrollArea className="h-96 w-full">
-                    {selectedObject && (
-                        <Table>
-                            <TableBody>
-                                {Object.entries(selectedObject).map(([key, value]) => {
-                                    if (typeof value === 'object' && value !== null) {
-                                      return null;
-                                    }
-                                    return (
-                                        <TableRow key={key}>
-                                            <TableCell className="font-medium">{key}</TableCell>
-                                            <TableCell>{String(value)}</TableCell>
-                                        </TableRow>
-                                    );
-                                })}
-                            </TableBody>
-                        </Table>
-                    )}
-                </ScrollArea>
-            </DialogContent>
-        </Dialog>
+      <Dialog open={!!selectedObject} onOpenChange={() => setSelectedObject(null)}>
+        <DialogContent className="sm:max-w-[425px] md:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Location Details</DialogTitle>
+            <DialogDescription>Full data for the selected point.</DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="h-96 w-full">
+            {selectedObject && (
+              <Table>
+                <TableBody>
+                  {Object.entries(selectedObject).map(([key, value]) => {
+                    if (typeof value === 'object' && value !== null) return null;
+                    return (
+                      <TableRow key={key}>
+                        <TableCell className="font-medium">{key}</TableCell>
+                        <TableCell>{String(value)}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
