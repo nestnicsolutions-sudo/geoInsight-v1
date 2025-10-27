@@ -57,6 +57,13 @@ export default function MapContainer() {
 
   useEffect(() => {
     if (data.length > 0 && mappedColumns.latitude && mappedColumns.longitude && layerProps.length > 0) {
+      // This is the key check: ensure the canvas is rendered with a valid size.
+      if (!deckRef.current?.deck?.canvas || deckRef.current.deck.canvas.width === 0) {
+        // If canvas is not ready, we can't calculate fitBounds, so we wait.
+        // This effect will re-run when the component updates.
+        return;
+      }
+
       const points = data
         .map(d => [Number(d[mappedColumns.longitude!]), Number(d[mappedColumns.latitude!])])
         .filter(p => !isNaN(p[0]) && !isNaN(p[1]));
@@ -76,39 +83,32 @@ export default function MapContainer() {
         [[Infinity, Infinity], [-Infinity, -Infinity]]
       );
 
-      // Final safety check for bounds
       if (!isFinite(bounds[0][0]) || !isFinite(bounds[0][1]) || !isFinite(bounds[1][0]) || !isFinite(bounds[1][1])) {
         console.error("Invalid bounds calculated:", bounds);
         setViewport(INITIAL_VIEWPORT);
         return;
       }
 
-      // Check if deck is ready and canvas is available
-      if (deckRef.current?.deck && deckRef.current.deck.canvas) {
+      try {
         const { width, height } = deckRef.current.deck.canvas;
-        if (width > 0 && height > 0) {
-            try {
-                const viewport = new WebMercatorViewport({ width, height });
-                const newViewport = viewport.fitBounds(bounds, {
-                  padding: 80, 
-                });
+        const viewport = new WebMercatorViewport({ width, height });
+        const newViewport = viewport.fitBounds(bounds, {
+          padding: 80, 
+        });
 
-                setViewport({
-                  ...viewport,
-                  ...newViewport,
-                  transitionDuration: 1000
-                });
-            } catch (err) {
-                console.error("fitBounds failed:", err);
-                // Fallback to initial viewport on error
-                setViewport(INITIAL_VIEWPORT);
-            }
-        }
+        setViewport({
+          ...viewport,
+          ...newViewport,
+          transitionDuration: 1000
+        });
+      } catch (err) {
+          console.error("fitBounds failed:", err);
+          setViewport(INITIAL_VIEWPORT);
       }
     } else {
         setViewport(INITIAL_VIEWPORT);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // This dependency array ensures the effect runs when the critical data changes.
   }, [data, mappedColumns.latitude, mappedColumns.longitude, layerProps.length]);
 
 
