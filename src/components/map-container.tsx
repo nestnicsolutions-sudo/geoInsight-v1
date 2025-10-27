@@ -56,20 +56,16 @@ export default function MapContainer() {
 
   // Auto-zoom to newly added layer
   useEffect(() => {
+    // Ensure we have the necessary data and the deck instance is ready
     if (!lastAddedLayerId || !deckRef.current?.deck?.canvas) {
       return;
-    }
-    
-    const { width, height } = deckRef.current.deck.canvas;
-    if (width === 0 || height === 0) {
-      return; // Canvas not ready
     }
 
     const newLayer = layerProps.find(l => l.id === lastAddedLayerId);
     if (!newLayer) return;
     
     const layerData = newLayer.data || data;
-    if (!layerData || layerData.length === 0) return;
+    if (!layerData || layerData.length === 0 || !mappedColumns.latitude || !mappedColumns.longitude) return;
 
     const points = layerData
       .map((d: DataRecord) => [
@@ -87,21 +83,32 @@ export default function MapContainer() {
       ],
       [[Infinity, Infinity], [-Infinity, -Infinity]]
     );
-      
+
+    // Final safety check for valid bounds
     if (!isFinite(bounds[0][0]) || !isFinite(bounds[0][1]) || !isFinite(bounds[1][0]) || !isFinite(bounds[1][1])) {
-        console.error("Invalid bounds for auto-zoom:", bounds);
-        return;
+      console.error("Invalid bounds for auto-zoom:", bounds);
+      return;
     }
+    
+    // Check if deck is ready
+    const { width, height } = deckRef.current.deck.canvas;
+    if (width > 0 && height > 0) {
+      try {
+        const viewportObj = new WebMercatorViewport({ width, height });
+        const newViewport = viewportObj.fitBounds(bounds, {
+          padding: 80,
+        });
 
-    try {
-      const viewportObj = new WebMercatorViewport({ width, height });
-      const fitted = viewportObj.fitBounds(bounds, { padding: 80 });
-      setViewport({ ...fitted, transitionDuration: 1000 });
-    } catch (err) {
-      console.error("fitBounds failed:", err);
+        setViewport({
+          ...newViewport,
+          transitionDuration: 1000,
+        });
+      } catch (err) {
+        console.error("fitBounds failed:", err);
+      }
     }
+  }, [lastAddedLayerId, mappedColumns.latitude, mappedColumns.longitude]);
 
-  }, [lastAddedLayerId]); // Only depends on lastAddedLayerId
 
   const handleViewportChange = (viewState: ViewState) => setViewport(viewState);
 
