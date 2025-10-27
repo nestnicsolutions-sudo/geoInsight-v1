@@ -28,21 +28,13 @@ const layerMap: any = {
   ColumnLayer,
 };
 
-const INITIAL_VIEWPORT: ViewState = {
-  longitude: 103.8198,
-  latitude: 1.3521,
-  zoom: 4,
-  pitch: 0,
-  bearing: 0,
-  padding: { top: 20, bottom: 20, left: 20, right: 20 }
-};
-
 export default function MapContainer() {
   const { viewport, setViewport, layers: layerProps, data, mappedColumns, lastAddedLayerId } = useStore();
   const { resolvedTheme } = useTheme();
   const [mapStyle, setMapStyle] = useState('mapbox://styles/mapbox/dark-v11');
   const [selectedObject, setSelectedObject] = useState<DataRecord | null>(null);
   const deckRef = useRef<DeckGL>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   // Update map style based on theme
   useEffect(() => {
@@ -58,7 +50,6 @@ export default function MapContainer() {
   useEffect(() => {
     if (!lastAddedLayerId) return;
 
-    // Use a small timeout to ensure the canvas is ready
     const timer = setTimeout(() => {
       if (!deckRef.current?.deck?.canvas || deckRef.current.deck.canvas.width === 0) {
         return;
@@ -99,6 +90,7 @@ export default function MapContainer() {
           padding: 80,
         });
 
+        setIsTransitioning(true);
         setViewport({
           ...newViewport,
           transitionDuration: 1000,
@@ -110,12 +102,18 @@ export default function MapContainer() {
 
     return () => clearTimeout(timer);
 
-  }, [lastAddedLayerId, mappedColumns.latitude, mappedColumns.longitude, layerProps, data]);
+  }, [lastAddedLayerId]);
 
 
   const handleClick = ({ object }: { object?: DataRecord }) => {
     if (object) setSelectedObject(object);
   };
+  
+  const handleViewportChange = (viewState: ViewState) => {
+    if (!isTransitioning) {
+        setViewport(viewState);
+    }
+  }
 
   const layers = useMemo(() => {
     if (!mappedColumns.latitude || !mappedColumns.longitude) return [];
@@ -183,7 +181,8 @@ export default function MapContainer() {
         viewState={viewport}
         layers={layers}
         onClick={handleClick}
-        onViewStateChange={e => setViewport(e.viewState)}
+        onViewStateChange={e => handleViewportChange(e.viewState)}
+        onTransitionEnd={() => setIsTransitioning(false)}
         getTooltip={({object}) => {
           if (!object) return null;
           const entries = Object.entries(object).filter(([key]) => key !== 'geometry');
