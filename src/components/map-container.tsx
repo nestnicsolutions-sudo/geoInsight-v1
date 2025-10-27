@@ -56,9 +56,15 @@ export default function MapContainer() {
 
   // Auto-zoom to newly added layer
   useEffect(() => {
-    // Ensure we have the necessary data and the deck instance is ready
-    if (!lastAddedLayerId || !deckRef.current?.deck?.canvas) {
+    if (!lastAddedLayerId) {
       return;
+    }
+    
+    // Ensure we have the necessary data and the deck instance is ready
+    if (!deckRef.current?.deck?.canvas || deckRef.current.deck.canvas.width === 0) {
+      // If canvas is not ready, retry in a bit. This is a common race condition.
+      const timer = setTimeout(() => setViewport({ ...viewport }), 100);
+      return () => clearTimeout(timer);
     }
 
     const newLayer = layerProps.find(l => l.id === lastAddedLayerId);
@@ -90,23 +96,22 @@ export default function MapContainer() {
       return;
     }
     
-    // Check if deck is ready
     const { width, height } = deckRef.current.deck.canvas;
-    if (width > 0 && height > 0) {
-      try {
-        const viewportObj = new WebMercatorViewport({ width, height });
-        const newViewport = viewportObj.fitBounds(bounds, {
-          padding: 80,
-        });
+    
+    try {
+      const viewportObj = new WebMercatorViewport({ width, height });
+      const newViewport = viewportObj.fitBounds(bounds, {
+        padding: 80,
+      });
 
-        setViewport({
-          ...newViewport,
-          transitionDuration: 1000,
-        });
-      } catch (err) {
-        console.error("fitBounds failed:", err);
-      }
+      setViewport({
+        ...newViewport,
+        transitionDuration: 1000,
+      });
+    } catch (err) {
+      console.error("fitBounds failed:", err);
     }
+
   }, [lastAddedLayerId, mappedColumns.latitude, mappedColumns.longitude]);
 
 
@@ -180,7 +185,6 @@ export default function MapContainer() {
         ref={deckRef}
         initialViewState={INITIAL_VIEWPORT}
         controller={true}
-        viewState={viewport}
         layers={layers}
         onClick={handleClick}
         onViewStateChange={e => handleViewportChange(e.viewState)}
