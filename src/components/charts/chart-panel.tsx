@@ -256,7 +256,7 @@ export default function ChartPanel() {
                            <Select onValueChange={handleAxisChange('xAxis')} value={chartConfig.xAxis || ""} disabled={!hasData}>
                                <SelectTrigger>
                                    <SelectValue placeholder="Select a numeric column" />
-                               </SelectTrigger>
+                               </Trigger>
                                <SelectContent>
                                    {numericColumns.map(col => <SelectItem key={col} value={col}>{col}</SelectItem>)}
                                </SelectContent>
