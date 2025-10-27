@@ -38,14 +38,11 @@ const INITIAL_VIEWPORT: ViewState = {
 };
 
 export default function MapContainer() {
-  const { viewport, setViewport, layers: layerProps, data, mappedColumns } = useStore();
+  const { viewport, setViewport, layers: layerProps, data, mappedColumns, lastAddedLayerId } = useStore();
   const { resolvedTheme } = useTheme();
   const [mapStyle, setMapStyle] = useState('mapbox://styles/mapbox/dark-v11');
   const [selectedObject, setSelectedObject] = useState<DataRecord | null>(null);
   const deckRef = useRef<DeckGL>(null);
-
-  // Track last added layer for auto-zoom
-  const [lastAddedLayerId, setLastAddedLayerId] = useState<string | null>(null);
 
   // Update map style based on theme
   useEffect(() => {
@@ -59,19 +56,19 @@ export default function MapContainer() {
 
   // Auto-zoom to newly added layer
   useEffect(() => {
-    if (!deckRef.current?.deck?.canvas || deckRef.current.deck.canvas.width === 0 || layerProps.length === 0) {
+    if (!lastAddedLayerId || !deckRef.current?.deck?.canvas) {
       return;
     }
-
-    const newLayer = layerProps[layerProps.length - 1];
-    if (!newLayer || newLayer.id === lastAddedLayerId) {
-      return;
+    
+    const { width, height } = deckRef.current.deck.canvas;
+    if (width === 0 || height === 0) {
+      return; // Canvas not ready
     }
 
-    setLastAddedLayerId(newLayer.id);
-
-    // Use layer-specific data if available, fallback to global data
-    const layerData = (newLayer as any).data || data;
+    const newLayer = layerProps.find(l => l.id === lastAddedLayerId);
+    if (!newLayer) return;
+    
+    const layerData = newLayer.data || data;
     if (!layerData || layerData.length === 0) return;
 
     const points = layerData
@@ -79,7 +76,7 @@ export default function MapContainer() {
         Number(d[mappedColumns.longitude!]),
         Number(d[mappedColumns.latitude!])
       ])
-      .filter((p: number[]) => !isNaN(p[0]) && !isNaN(p[1]));
+      .filter(p => !isNaN(p[0]) && !isNaN(p[1]));
 
     if (points.length === 0) return;
 
@@ -90,23 +87,21 @@ export default function MapContainer() {
       ],
       [[Infinity, Infinity], [-Infinity, -Infinity]]
     );
-
-    // Safety check for invalid bounds
+      
     if (!isFinite(bounds[0][0]) || !isFinite(bounds[0][1]) || !isFinite(bounds[1][0]) || !isFinite(bounds[1][1])) {
-        console.error("Invalid bounds calculated:", bounds);
+        console.error("Invalid bounds for auto-zoom:", bounds);
         return;
     }
 
-    const { width, height } = deckRef.current.deck.canvas;
-    const viewportObj = new WebMercatorViewport({ width, height });
-
     try {
+      const viewportObj = new WebMercatorViewport({ width, height });
       const fitted = viewportObj.fitBounds(bounds, { padding: 80 });
       setViewport({ ...fitted, transitionDuration: 1000 });
     } catch (err) {
       console.error("fitBounds failed:", err);
     }
-  }, [layerProps, data, mappedColumns.latitude, mappedColumns.longitude, lastAddedLayerId, setViewport]);
+
+  }, [lastAddedLayerId]); // Only depends on lastAddedLayerId
 
   const handleViewportChange = (viewState: ViewState) => setViewport(viewState);
 
@@ -178,6 +173,7 @@ export default function MapContainer() {
         ref={deckRef}
         initialViewState={INITIAL_VIEWPORT}
         controller={true}
+        viewState={viewport}
         layers={layers}
         onClick={handleClick}
         onViewStateChange={e => handleViewportChange(e.viewState)}

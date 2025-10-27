@@ -22,6 +22,7 @@ export type LayerProps = {
     id: string;
     type: string;
     config: any;
+    data?: DataRecord[];
 };
 
 export interface AiError {
@@ -59,6 +60,7 @@ interface AppState {
     setMappedColumns: (mappedColumns: Partial<MappedColumns>) => void;
 
     layers: LayerProps[];
+    lastAddedLayerId: string | null;
     addLayer: (layer: LayerProps) => void;
     removeLayer: (layerId: string) => void;
     updateLayerConfig: (layerId: string, newConfig: Partial<any>) => void;
@@ -108,7 +110,11 @@ export const useStore = create<AppState>()(
       setMappedColumns: (mappedColumns) => set(state => ({ mappedColumns: { ...state.mappedColumns, ...mappedColumns }})),
 
       layers: [],
-      addLayer: (layer) => set(state => ({ layers: [...state.layers, layer] })),
+      lastAddedLayerId: null,
+      addLayer: (layer) => set(state => ({ 
+          layers: [...state.layers, layer],
+          lastAddedLayerId: layer.id,
+      })),
       removeLayer: (layerId) => set(state => ({ layers: state.layers.filter(l => l.id !== layerId) })),
       updateLayerConfig: (layerId, newConfig) => set(state => ({
         layers: state.layers.map(l => 
