@@ -91,15 +91,17 @@ export default function MapContainer() {
 
             setIsTransitioning(true);
             setViewport({
-            ...newViewport,
-            transitionDuration: 1000,
+              ...newViewport,
+              transitionDuration: 2500, // Slower animation
             });
+
             setTimeout(() => {
-              setIsTransitioning(false);
-            }, 1000);
+                setIsTransitioning(false);
+            }, 2500);
 
         } catch (err) {
             console.error("fitBounds failed:", err);
+            setIsTransitioning(false);
         }
     }, 100);
 
@@ -246,3 +248,5 @@ export default function MapContainer() {
     </div>
   );
 }
+
+    
