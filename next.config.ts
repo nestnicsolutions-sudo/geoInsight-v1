@@ -32,4 +32,5 @@ const nextConfig: NextConfig = {
   },
 };
 
+// This comment is added to force a server restart.
 export default nextConfig;
