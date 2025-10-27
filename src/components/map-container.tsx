@@ -95,6 +95,12 @@ export default function MapContainer() {
           ...newViewport,
           transitionDuration: 1000,
         });
+
+        // Ensure isTransitioning is reset after the transition duration
+        setTimeout(() => {
+            setIsTransitioning(false);
+        }, 1000);
+
       } catch (err) {
         console.error("fitBounds failed:", err);
       }
@@ -182,7 +188,6 @@ export default function MapContainer() {
         layers={layers}
         onClick={handleClick}
         onViewStateChange={e => handleViewportChange(e.viewState)}
-        onTransitionEnd={() => setIsTransitioning(false)}
         getTooltip={({object}) => {
           if (!object) return null;
           const entries = Object.entries(object).filter(([key]) => key !== 'geometry');
