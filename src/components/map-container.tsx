@@ -92,9 +92,9 @@ export default function MapContainer() {
             setIsTransitioning(true);
             setViewport({
               ...newViewport,
-              transitionDuration: 2500, // Slower animation
+              transitionDuration: 2500,
             });
-
+            
             setTimeout(() => {
                 setIsTransitioning(false);
             }, 2500);

@@ -28,13 +28,19 @@ type LayerType =
   | "ScreenGridLayer"
   | "ColumnLayer";
 
-const COLOR_OPTIONS: { name: string, value: [number, number, number, number] }[] = [
+const FILL_COLOR_OPTIONS: { name: string, value: [number, number, number, number] }[] = [
     { name: 'Orange', value: [255, 140, 0, 180] },
     { name: 'Blue', value: [50, 130, 255, 180] },
     { name: 'Green', value: [0, 200, 100, 180] },
     { name: 'Purple', value: [138, 43, 226, 180] },
-]
+];
 
+const HEATMAP_COLOR_OPTIONS: { name: string, value: [number, number, number][] }[] = [
+    { name: 'Classic', value: [ [255, 255, 178], [254, 217, 118], [254, 178, 76], [253, 141, 60], [240, 59, 32], [189, 0, 38] ] },
+    { name: 'Viridis', value: [ [68, 1, 84], [72, 40, 120], [62, 74, 137], [49, 104, 142], [38, 130, 142], [31, 158, 137], [53, 183, 121], [109, 205, 89], [180, 222, 44], [253, 231, 37] ] },
+    { name: 'Magma', value: [ [0, 0, 3], [28, 16, 68], [79, 18, 123], [129, 37, 128], [181, 54, 122], [229, 81, 100], [251, 135, 97], [254, 194, 135], [252, 253, 191] ]},
+    { name: 'Blues', value: [ [247, 251, 255], [222, 235, 247], [198, 219, 239], [158, 202, 225], [107, 174, 214], [66, 146, 198], [33, 113, 181], [8, 81, 156], [8, 48, 107] ]},
+]
 
 export default function LayerListPanel() {
   const { addLayer, layers, data, mappedColumns, removeLayer, updateLayerConfig } = useStore();
@@ -73,6 +79,7 @@ export default function LayerListPanel() {
           intensity: 1,
           threshold: 0.03,
           radiusPixels: 30,
+          colorRange: HEATMAP_COLOR_OPTIONS[0].value,
         };
         break;
       case "HexagonLayer":
@@ -87,14 +94,7 @@ export default function LayerListPanel() {
         newLayerConfig = {
           opacity: 0.8,
           cellSizePixels: 40,
-          colorRange: [
-            [0, 25, 0, 25],
-            [0, 85, 0, 85],
-            [0, 127, 0, 127],
-            [0, 170, 0, 170],
-            [0, 190, 0, 190],
-            [0, 255, 0, 255],
-          ],
+          colorRange: HEATMAP_COLOR_OPTIONS[0].value,
         };
         break;
       case "ColumnLayer":
@@ -148,6 +148,10 @@ export default function LayerListPanel() {
       updateLayerConfig(layerId, { getFillColor: color });
     }
 
+    const handleColorRangeChange = (layerId: string, colorRange: [number, number, number][]) => {
+      updateLayerConfig(layerId, { colorRange });
+    }
+
   return (
     <div className="space-y-4">
       <DropdownMenu>
@@ -190,8 +194,9 @@ export default function LayerListPanel() {
             No layers added yet.
           </div>
         ) : (
-          layers.map((layer, index) => {
+          layers.map((layer) => {
             const hasFillColor = layer.config.hasOwnProperty('getFillColor');
+            const hasColorRange = layer.config.hasOwnProperty('colorRange');
             return (
                 <Collapsible key={layer.id} defaultOpen={true} className="p-3 text-sm border rounded-lg bg-secondary/50">
                 <div className="flex items-center justify-between">
@@ -221,7 +226,7 @@ export default function LayerListPanel() {
                         <div className="space-y-2">
                             <Label>Color</Label>
                             <div className="flex items-center gap-2">
-                                {COLOR_OPTIONS.map(color => (
+                                {FILL_COLOR_OPTIONS.map(color => (
                                     <button
                                         key={color.name}
                                         title={color.name}
@@ -236,6 +241,25 @@ export default function LayerListPanel() {
                             </div>
                         </div>
                     )}
+                    {hasColorRange && (
+                         <div className="space-y-2">
+                            <Label>Color Ramp</Label>
+                             <div className="flex items-center gap-2">
+                                {HEATMAP_COLOR_OPTIONS.map(palette => (
+                                     <button
+                                        key={palette.name}
+                                        title={palette.name}
+                                        onClick={() => handleColorRangeChange(layer.id, palette.value)}
+                                        className={cn(
+                                            "h-6 w-full rounded border-2 transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                                            JSON.stringify(layer.config.colorRange) === JSON.stringify(palette.value) ? 'border-primary' : 'border-transparent'
+                                        )}
+                                        style={{ background: `linear-gradient(to right, ${palette.value.map(c => `rgb(${c[0]}, ${c[1]}, ${c[2]})`).join(', ')})` }}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </CollapsibleContent>
                 </Collapsible>
             )
@@ -245,3 +269,5 @@ export default function LayerListPanel() {
     </div>
   );
 }
+
+    
