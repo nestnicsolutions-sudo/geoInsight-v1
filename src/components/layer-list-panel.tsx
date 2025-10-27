@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import SmartLayerSuggestionsPanel from "./smart-layer-suggestions-panel";
+import { cn } from "@/lib/utils";
 
 type LayerType =
   | "ScatterplotLayer"
@@ -25,6 +27,14 @@ type LayerType =
   | "HexagonLayer"
   | "ScreenGridLayer"
   | "ColumnLayer";
+
+const COLOR_OPTIONS: { name: string, value: [number, number, number, number] }[] = [
+    { name: 'Orange', value: [255, 140, 0, 180] },
+    { name: 'Blue', value: [50, 130, 255, 180] },
+    { name: 'Green', value: [0, 200, 100, 180] },
+    { name: 'Purple', value: [138, 43, 226, 180] },
+]
+
 
 export default function LayerListPanel() {
   const { addLayer, layers, data, mappedColumns, removeLayer, updateLayerConfig } = useStore();
@@ -133,6 +143,10 @@ export default function LayerListPanel() {
     const handleOpacityChange = (layerId: string, value: number[]) => {
       updateLayerConfig(layerId, { opacity: value[0] });
     }
+    
+    const handleColorChange = (layerId: string, color: [number, number, number, number]) => {
+      updateLayerConfig(layerId, { getFillColor: color });
+    }
 
   return (
     <div className="space-y-4">
@@ -176,34 +190,56 @@ export default function LayerListPanel() {
             No layers added yet.
           </div>
         ) : (
-          layers.map((layer, index) => (
-            <Collapsible key={layer.id} defaultOpen={true} className="p-3 text-sm border rounded-lg bg-secondary/50">
-              <div className="flex items-center justify-between">
-                <CollapsibleTrigger className="flex items-center w-full text-left">
-                   <ChevronsUpDown className="h-4 w-4 mr-2" />
-                  <span className="font-medium">
-                    {capitalizeFirstLetter(layer.type.replace('Layer', ''))} Layer
-                  </span>
-                  <ChevronDown className="h-4 w-4 ml-auto transition-transform [&[data-state=open]]:rotate-180" />
-                </CollapsibleTrigger>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteLayer(layer.id)}>
-                    <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+          layers.map((layer, index) => {
+            const hasFillColor = layer.config.hasOwnProperty('getFillColor');
+            return (
+                <Collapsible key={layer.id} defaultOpen={true} className="p-3 text-sm border rounded-lg bg-secondary/50">
+                <div className="flex items-center justify-between">
+                    <CollapsibleTrigger className="flex items-center w-full text-left">
+                    <ChevronsUpDown className="h-4 w-4 mr-2" />
+                    <span className="font-medium">
+                        {capitalizeFirstLetter(layer.type.replace('Layer', ''))} Layer
+                    </span>
+                    <ChevronDown className="h-4 w-4 ml-auto transition-transform [&[data-state=open]]:rotate-180" />
+                    </CollapsibleTrigger>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteLayer(layer.id)}>
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </div>
 
-              <CollapsibleContent className="pt-4 space-y-4">
-                  <div className="space-y-2">
-                      <Label>Opacity</Label>
-                      <Slider
-                          value={[layer.config.opacity]}
-                          onValueChange={(value) => handleOpacityChange(layer.id, value)}
-                          max={1}
-                          step={0.01}
-                      />
-                  </div>
-              </CollapsibleContent>
-            </Collapsible>
-          ))
+                <CollapsibleContent className="pt-4 space-y-4">
+                    <div className="space-y-2">
+                        <Label>Opacity</Label>
+                        <Slider
+                            value={[layer.config.opacity]}
+                            onValueChange={(value) => handleOpacityChange(layer.id, value)}
+                            max={1}
+                            step={0.01}
+                        />
+                    </div>
+                     {hasFillColor && (
+                        <div className="space-y-2">
+                            <Label>Color</Label>
+                            <div className="flex items-center gap-2">
+                                {COLOR_OPTIONS.map(color => (
+                                    <button
+                                        key={color.name}
+                                        title={color.name}
+                                        onClick={() => handleColorChange(layer.id, color.value)}
+                                        className={cn(
+                                            "h-6 w-6 rounded-full border-2 transition-transform transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                                            JSON.stringify(layer.config.getFillColor) === JSON.stringify(color.value) ? 'border-primary' : 'border-transparent'
+                                        )}
+                                        style={{ backgroundColor: `rgba(${color.value[0]}, ${color.value[1]}, ${color.value[2]}, 0.7)` }}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </CollapsibleContent>
+                </Collapsible>
+            )
+        })
         )}
       </div>
     </div>
