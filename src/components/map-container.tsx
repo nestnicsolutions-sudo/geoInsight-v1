@@ -57,7 +57,14 @@ export default function MapContainer() {
 
   useEffect(() => {
     if (data.length > 0 && mappedColumns.latitude && mappedColumns.longitude) {
-      const points = data.map(d => [Number(d[mappedColumns.longitude!]), Number(d[mappedColumns.latitude!])]);
+      const points = data
+        .map(d => [Number(d[mappedColumns.longitude!]), Number(d[mappedColumns.latitude!])])
+        .filter(p => !isNaN(p[0]) && !isNaN(p[1]));
+
+      if (points.length === 0) {
+        setViewport(INITIAL_VIEWPORT);
+        return;
+      }
       
       const bounds: [[number, number], [number, number]] = points.reduce(
         (acc, point) => {
@@ -69,8 +76,15 @@ export default function MapContainer() {
         [[Infinity, Infinity], [-Infinity, -Infinity]]
       );
 
-      // Check if bounds are valid and canvas is ready
-      if (bounds[0][0] !== Infinity && deckRef.current?.deck) {
+      // Final safety check for bounds
+      if (!isFinite(bounds[0][0]) || !isFinite(bounds[0][1]) || !isFinite(bounds[1][0]) || !isFinite(bounds[1][1])) {
+        console.error("Invalid bounds calculated:", bounds);
+        setViewport(INITIAL_VIEWPORT);
+        return;
+      }
+
+      // Check if deck is ready
+      if (deckRef.current?.deck) {
         const { width, height } = deckRef.current.deck.canvas;
         if (width > 0 && height > 0) {
             try {
@@ -93,7 +107,7 @@ export default function MapContainer() {
         setViewport(INITIAL_VIEWPORT);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, mappedColumns.latitude, mappedColumns.longitude]);
+  }, [data, mappedColumns.latitude, mappedColumns.longitude, setViewport]);
 
   const handleViewportChange = (viewState: ViewState) => {
     setViewport(viewState);
