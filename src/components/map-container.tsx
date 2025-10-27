@@ -56,66 +56,62 @@ export default function MapContainer() {
 
   // Auto-zoom to newly added layer
   useEffect(() => {
-    if (!lastAddedLayerId) {
-      return;
-    }
-    
-    // Ensure we have the necessary data and the deck instance is ready
-    if (!deckRef.current?.deck?.canvas || deckRef.current.deck.canvas.width === 0) {
-      // If canvas is not ready, retry in a bit. This is a common race condition.
-      const timer = setTimeout(() => setViewport({ ...viewport }), 100);
-      return () => clearTimeout(timer);
-    }
+    if (!lastAddedLayerId) return;
 
-    const newLayer = layerProps.find(l => l.id === lastAddedLayerId);
-    if (!newLayer) return;
-    
-    const layerData = newLayer.data || data;
-    if (!layerData || layerData.length === 0 || !mappedColumns.latitude || !mappedColumns.longitude) return;
+    // Use a small timeout to ensure the canvas is ready
+    const timer = setTimeout(() => {
+      if (!deckRef.current?.deck?.canvas || deckRef.current.deck.canvas.width === 0) {
+        return;
+      }
+      
+      const newLayer = layerProps.find(l => l.id === lastAddedLayerId);
+      if (!newLayer) return;
+      
+      const layerData = newLayer.data || data;
+      if (!layerData || layerData.length === 0 || !mappedColumns.latitude || !mappedColumns.longitude) return;
 
-    const points = layerData
-      .map((d: DataRecord) => [
-        Number(d[mappedColumns.longitude!]),
-        Number(d[mappedColumns.latitude!])
-      ])
-      .filter(p => !isNaN(p[0]) && !isNaN(p[1]));
+      const points = layerData
+        .map((d: DataRecord) => [
+          Number(d[mappedColumns.longitude!]),
+          Number(d[mappedColumns.latitude!])
+        ])
+        .filter(p => !isNaN(p[0]) && !isNaN(p[1]));
 
-    if (points.length === 0) return;
+      if (points.length === 0) return;
 
-    const bounds: [[number, number], [number, number]] = points.reduce(
-      (acc, point) => [
-        [Math.min(acc[0][0], point[0]), Math.min(acc[0][1], point[1])],
-        [Math.max(acc[1][0], point[0]), Math.max(acc[1][1], point[1])]
-      ],
-      [[Infinity, Infinity], [-Infinity, -Infinity]]
-    );
+      const bounds: [[number, number], [number, number]] = points.reduce(
+        (acc, point) => [
+          [Math.min(acc[0][0], point[0]), Math.min(acc[0][1], point[1])],
+          [Math.max(acc[1][0], point[0]), Math.max(acc[1][1], point[1])]
+        ],
+        [[Infinity, Infinity], [-Infinity, -Infinity]]
+      );
+      
+      if (!isFinite(bounds[0][0]) || !isFinite(bounds[0][1]) || !isFinite(bounds[1][0]) || !isFinite(bounds[1][1])) {
+        return;
+      }
+      
+      const { width, height } = deckRef.current.deck.canvas;
+      
+      try {
+        const viewportObj = new WebMercatorViewport({ width, height });
+        const newViewport = viewportObj.fitBounds(bounds, {
+          padding: 80,
+        });
 
-    // Final safety check for valid bounds
-    if (!isFinite(bounds[0][0]) || !isFinite(bounds[0][1]) || !isFinite(bounds[1][0]) || !isFinite(bounds[1][1])) {
-      console.error("Invalid bounds for auto-zoom:", bounds);
-      return;
-    }
-    
-    const { width, height } = deckRef.current.deck.canvas;
-    
-    try {
-      const viewportObj = new WebMercatorViewport({ width, height });
-      const newViewport = viewportObj.fitBounds(bounds, {
-        padding: 80,
-      });
+        setViewport({
+          ...newViewport,
+          transitionDuration: 1000,
+        });
+      } catch (err) {
+        console.error("fitBounds failed:", err);
+      }
+    }, 100);
 
-      setViewport({
-        ...newViewport,
-        transitionDuration: 1000,
-      });
-    } catch (err) {
-      console.error("fitBounds failed:", err);
-    }
+    return () => clearTimeout(timer);
 
-  }, [lastAddedLayerId, mappedColumns.latitude, mappedColumns.longitude]);
+  }, [lastAddedLayerId, mappedColumns.latitude, mappedColumns.longitude, layerProps, data]);
 
-
-  const handleViewportChange = (viewState: ViewState) => setViewport(viewState);
 
   const handleClick = ({ object }: { object?: DataRecord }) => {
     if (object) setSelectedObject(object);
@@ -183,11 +179,11 @@ export default function MapContainer() {
     <div className="relative h-full w-full">
       <DeckGL
         ref={deckRef}
-        initialViewState={INITIAL_VIEWPORT}
         controller={true}
+        viewState={viewport}
         layers={layers}
         onClick={handleClick}
-        onViewStateChange={e => handleViewportChange(e.viewState)}
+        onViewStateChange={e => setViewport(e.viewState)}
         getTooltip={({object}) => {
           if (!object) return null;
           const entries = Object.entries(object).filter(([key]) => key !== 'geometry');
