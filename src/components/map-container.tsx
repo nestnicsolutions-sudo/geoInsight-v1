@@ -4,7 +4,7 @@ import Map, { ViewState } from 'react-map-gl';
 import DeckGL from '@deck.gl/react';
 import { useStore, DataRecord } from '@/lib/store';
 import { useTheme } from 'next-themes';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { ScatterplotLayer, ColumnLayer } from '@deck.gl/layers';
 import { HeatmapLayer, HexagonLayer, ScreenGridLayer } from '@deck.gl/aggregation-layers';
 import {
@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
+import { WebMercatorViewport } from '@deck.gl/core';
+
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
@@ -27,11 +29,21 @@ const layerMap: any = {
   ColumnLayer,
 };
 
+const INITIAL_VIEWPORT: ViewState = {
+  longitude: 103.8198,
+  latitude: 1.3521,
+  zoom: 4,
+  pitch: 0,
+  bearing: 0,
+  padding: { top: 20, bottom: 20, left: 20, right: 20 }
+};
+
 export default function MapContainer() {
   const { viewport, setViewport, layers: layerProps, data, mappedColumns } = useStore();
   const { resolvedTheme } = useTheme();
   const [mapStyle, setMapStyle] = useState('mapbox://styles/mapbox/dark-v11');
   const [selectedObject, setSelectedObject] = useState<DataRecord | null>(null);
+  const deckRef = useRef<DeckGL>(null);
 
   useEffect(() => {
     if (resolvedTheme) {
@@ -42,6 +54,39 @@ export default function MapContainer() {
       );
     }
   }, [resolvedTheme]);
+
+  useEffect(() => {
+    if (data.length > 0 && mappedColumns.latitude && mappedColumns.longitude) {
+      const points = data.map(d => [Number(d[mappedColumns.longitude!]), Number(d[mappedColumns.latitude!])]);
+      
+      const bounds: [[number, number], [number, number]] = points.reduce(
+        (acc, point) => {
+          return [
+            [Math.min(acc[0][0], point[0]), Math.min(acc[0][1], point[1])],
+            [Math.max(acc[1][0], point[0]), Math.max(acc[1][1], point[1])],
+          ];
+        },
+        [[Infinity, Infinity], [-Infinity, -Infinity]]
+      );
+
+      // Check if bounds are valid
+      if (bounds[0][0] !== Infinity && deckRef.current?.deck) {
+        const { width, height } = deckRef.current.deck.canvas;
+        const viewport = new WebMercatorViewport({ width, height });
+        const newViewport = viewport.fitBounds(bounds, {
+          padding: 80, 
+        });
+
+        setViewport({
+          ...viewport,
+          ...newViewport,
+          transitionDuration: 1000
+        });
+      }
+    } else {
+        setViewport(INITIAL_VIEWPORT);
+    }
+  }, [data, mappedColumns.latitude, mappedColumns.longitude]);
 
   const handleViewportChange = (viewState: ViewState) => {
     setViewport(viewState);
@@ -114,6 +159,7 @@ export default function MapContainer() {
   return (
     <div className="relative h-full w-full">
         <DeckGL
+            ref={deckRef}
             initialViewState={viewport}
             controller={true}
             layers={layers}
@@ -160,6 +206,7 @@ export default function MapContainer() {
             }}
         >
             <Map
+                {...viewport}
                 mapboxAccessToken={MAPBOX_TOKEN}
                 mapStyle={mapStyle}
             />
@@ -197,3 +244,5 @@ export default function MapContainer() {
     </div>
   );
 }
+
+    

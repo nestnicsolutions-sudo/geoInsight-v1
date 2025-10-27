@@ -65,7 +65,7 @@ interface AppState {
     
     // map state
     viewport: ViewState;
-    setViewport: (viewport: ViewState) => void;
+    setViewport: (viewport: Partial<ViewState>) => void;
 
     // AI state
     aiError: AiError | null;
@@ -124,7 +124,7 @@ export const useStore = create<AppState>()(
         bearing: 0,
         padding: { top: 20, bottom: 20, left: 20, right: 20 }
       },
-      setViewport: (viewport) => set({ viewport }),
+      setViewport: (viewport) => set(state => ({ viewport: {...state.viewport, ...viewport} })),
 
       aiError: null,
       setAiError: (error) => set({ aiError: error }),
